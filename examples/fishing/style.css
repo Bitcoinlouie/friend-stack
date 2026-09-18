@@ -1,0 +1,44 @@
+.fv1 { --paper: #f5f3ed; --ink: #171915; --game-paper: var(--paper); --game-ink: var(--ink); --game-accent: #cddd89; --game-font: ui-monospace, monospace; position: relative; isolation: isolate; contain: layout paint; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; color: var(--ink); background: #edf0e5; font: 14px/1.45 system-ui, sans-serif; }
+.fv1 * { box-sizing: border-box; }
+.fv1 h2, .fv1 h3, .fv1 p, .fv1 ul { margin: 0; }
+.fv1 button, .fv1 input { font: inherit; color: inherit; }
+.fv1 button { padding: 8px 12px; min-height: 38px; border: 1px solid var(--ink); background: var(--paper); cursor: pointer; }
+.fv1 button:hover:not(:disabled) { background: #e1e9c3; }
+.fv1 button:disabled { opacity: .45; cursor: default; }
+.fv1 button:focus-visible, .fv1 input:focus-visible, .fv1 canvas:focus-visible { outline: 3px solid #446b2a; outline-offset: -3px; }
+.fv1 .fv1-primary { background: var(--ink); color: var(--paper); }
+.fv1 .fv1-primary:hover:not(:disabled) { background: #394d2b; }
+.fv1-empty { display: grid; place-items: center; padding: 20px; }
+.fv1-world { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.fv1-world canvas { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; display: block; touch-action: none; }
+.fv1-world-status { position: absolute; top: 70px; left: 12px; max-width: calc(100% - 24px); font-size: 10px; pointer-events: none; }
+.fv1-game-ui { position: absolute; inset: 0; pointer-events: none; }
+.fv1-game-ui button { pointer-events: auto; }
+.fv1-hud { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.fv1-hud > span { background: var(--paper); border: 1px solid var(--ink); padding: 6px 10px; font-size: 12px; }
+.fv1-hud small { display: block; font-size: 9px; }
+.fv1-lake-action { position: absolute; right: 12px; bottom: 65px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.fv1-lake-action p { background: var(--paper); padding: 5px 8px; border: 1px solid var(--ink); }
+.fv1-nav { position: absolute; display: flex; gap: 6px; left: 12px; right: 12px; bottom: 12px; overflow-x: auto; pointer-events: auto; scrollbar-width: thin; }
+.fv1-nav button { white-space: nowrap; flex: 1; }
+.fv1-feedback { position: absolute; left: 12px; bottom: 65px; max-width: 50%; padding: 8px; background: var(--paper); border: 1px solid var(--ink); font-size: 11px; }
+.fv1-panel { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.fv1-panel small { font-size: 11px; }
+.fv1-quantity, .fv1-motion { display: flex; gap: 12px; align-items: center; }
+.fv1-quantity input { width: 80px; padding: 7px; border: 1px solid var(--ink); background: transparent; }
+.fv1-actions { display: flex; gap: 8px; }
+.fv1-actions > button { flex: 1; }
+.fv1-reveal { height: 160px; flex-shrink: 0; }
+.fv1-reveal .rf-reward-reveal { --game-font: ui-monospace, monospace; }
+.fv1-collection, .fv1-sales { list-style: none; padding: 0; }
+.fv1-collection { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fv1-collection li { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.fv1-collection li[data-owned="false"] { opacity: .45; }
+.fv1-collection svg { width: 48px; height: 36px; flex-shrink: 0; }
+.fv1-collection small, .fv1-sales small { display: block; }
+.fv1-sales li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 12px; border-bottom: 1px solid #17191533; }
+.fv1-sales button { max-width: 50%; font-size: 11px; }
+.fv1 table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fv1 th, .fv1 td { text-align: left; padding: 8px 4px; border-bottom: 1px solid #17191533; }
+.fv1 td:last-child { white-space: nowrap; }
+@media (max-width: 520px) { .fv1 { font-size: 12px; } .fv1-nav { left: 6px; right: 6px; bottom: 6px; gap: 4px; } .fv1-nav button { min-height: 34px; font-size: 11px; padding: 6px; } .fv1-hud { top: 6px; left: 6px; right: 6px; } .fv1-hud > span { padding: 3px 6px; font-size: 11px; } .fv1-lake-action { right: 6px; bottom: 48px; } .fv1-world-status { top: 48px; left: 6px; font-size: 8px; } .fv1-collection { grid-template-columns: 1fr; } .fv1-panel { gap: 10px; } .fv1-feedback { left: 6px; bottom: 48px; padding: 4px; font-size: 9px; } }

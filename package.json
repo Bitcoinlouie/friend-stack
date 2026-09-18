@@ -1,0 +1,142 @@
+{
+  "name": "@rarefriends/friendsdk",
+  "version": "0.1.0",
+  "description": "Rare Friends game building blocks and v1 chance-game reference",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "assets",
+    "examples",
+    "API.md",
+    "WORLD_RULES.md",
+    "SOUND_KIT.md",
+    "NOTICE.md",
+    "AGENTS.md",
+    "FISHING_GAME_DESIGN.md",
+    "scripts",
+    "tests",
+    "games",
+    "contracts/src",
+    "contracts/test",
+    "contracts/lib",
+    "contracts/foundry.toml",
+    "contracts/README.md",
+    "contracts/AGENTS.md",
+    "contracts/COMMANDMENTS.md",
+    "tsconfig.json"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./world": {
+      "types": "./dist/friend-world.d.ts",
+      "import": "./dist/friend-world.js"
+    },
+    "./navigation": {
+      "types": "./dist/friend-navigation.d.ts",
+      "import": "./dist/friend-navigation.js"
+    },
+    "./movement": {
+      "types": "./dist/movement.d.ts",
+      "import": "./dist/movement.js"
+    },
+    "./assets": {
+      "types": "./dist/assets.d.ts",
+      "import": "./dist/assets.js"
+    },
+    "./sprites": {
+      "types": "./dist/friend-sprites.d.ts",
+      "import": "./dist/friend-sprites.js"
+    },
+    "./identity": {
+      "types": "./dist/identity.d.ts",
+      "import": "./dist/identity.js"
+    },
+    "./sounds": {
+      "types": "./dist/friend-sounds.d.ts",
+      "import": "./dist/friend-sounds.js"
+    },
+    "./items": {
+      "types": "./dist/items.d.ts",
+      "import": "./dist/items.js"
+    },
+    "./ui": {
+      "types": "./dist/experience-ui.d.ts",
+      "import": "./dist/experience-ui.js"
+    },
+    "./reveal": {
+      "types": "./dist/reward-reveal.d.ts",
+      "import": "./dist/reward-reveal.js"
+    },
+    "./game": {
+      "types": "./dist/game.d.ts",
+      "import": "./dist/game.js"
+    },
+    "./host": {
+      "types": "./dist/chain.d.ts",
+      "import": "./dist/chain.js"
+    },
+    "./examples/fishing": {
+      "types": "./examples/fishing/index.tsx",
+      "import": "./dist/examples/fishing/index.js"
+    },
+    "./examples/fishing.css": "./dist/examples/fishing/index.css",
+    "./ui.css": "./assets/experience-ui.css",
+    "./reveal.css": "./assets/reward-reveal.css",
+    "./worlds.json": "./src/friend-worlds.json",
+    "./frame": {
+      "types": "./dist/game-frame.d.ts",
+      "import": "./dist/game-frame.js"
+    },
+    "./frame.css": "./assets/game-frame.css",
+    "./bridge": {
+      "types": "./dist/frame-bridge.d.ts",
+      "import": "./dist/frame-bridge.js"
+    },
+    "./examples/fishing/game.json": "./examples/fishing/game.json",
+    "./examples/fishing/art.json": "./examples/fishing/art.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build-fishing.mjs && node scripts/build-embedded.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p examples/tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "prepack": "npm run build",
+    "sync:contracts": "node scripts/sync-contract-abi.mjs",
+    "verify:contracts": "node scripts/sync-contract-abi.mjs --check",
+    "build:contracts": "forge build --root contracts",
+    "test:contracts": "forge test --root contracts",
+    "deploy:contracts": "npm run build:contracts && npm run sync:contracts && npm run build && node scripts/contracts/deploy.mjs",
+    "play:contracts": "node scripts/contracts/play.mjs",
+    "resolve:contracts": "node scripts/contracts/resolve.mjs",
+    "check:games": "node scripts/check-games.mjs"
+  },
+  "dependencies": {
+    "viem": "2.56.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "esbuild": "0.28.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "typescript": "6.0.3"
+  }
+}
