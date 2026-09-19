@@ -5,10 +5,10 @@ From the repository root:
 ```sh
 npm ci
 npm run build
-npm run preview
+python3 -m http.server 4178 --directory examples/fishing/dist
 ```
 
-Open http://127.0.0.1:4178, choose a sample Friend, buy bait, visit the lake, cast, reel in, then keep or sell. The standard 960 × 640 frame contains every game control, menu, odds table, Friend selector, wallet view and action confirmation. Small screens keep the same ratio; menus scroll inside the frame.
+Open http://localhost:4178, choose a sample Friend, buy bait, visit the lake, cast, reel in, then keep or sell. The standard 960 × 640 frame contains every game control, menu, odds table, Friend selector, wallet view and action confirmation. Small screens keep the same ratio; menus scroll inside the frame.
 
 `FishingGame` is only the developer viewport. The trusted host supplies `GameFrame`, the selected Friend ID and the defined game client. The standalone `FishingPreview` is a local host fixture. The build also emits `dist/embed/fishing-frame.html` for isolated sandboxed-host experiments; it requires the host handshake described in `API.md`. The production web app does not host this example. A developer cannot add UI outside the game container.
 

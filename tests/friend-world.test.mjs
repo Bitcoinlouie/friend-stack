@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import {
   CANVAS, GAME_PALETTE, PROJECTION, PROP_CANVAS, PROP_TYPES, WORLD_PRESETS,
@@ -242,7 +241,7 @@ test('text metadata is escaped and reusable props carry their transparent canvas
 });
 
 test('the complete SDK bundles for browsers without Node runtime or character snapshot dependencies', async () => {
-  const result = await build({ entryPoints: [fileURLToPath(new URL('../src/friend-world.ts', import.meta.url))],
+  const result = await build({ entryPoints: [new URL('../src/friend-world.ts', import.meta.url).pathname],
     bundle: true, write: false, platform: 'browser', format: 'esm', target: 'es2020', metafile: true });
   const inputs = Object.keys(result.metafile.inputs);
   assert.equal(inputs.length, 2);

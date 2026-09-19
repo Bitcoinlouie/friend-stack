@@ -75,4 +75,4 @@ After Solidity changes, run `npm run build:contracts`, `npm run sync:contracts`,
 
 Dice uses commit-and-reveal and an external provider. That provider can delay or withhold delivery. Pending plays retain their RF backing, but this game does not expose Dice fee refunds, cancellation, rerolls or provider replacement. The deployment script does not prove live delivery or independently audit the external oracle. No live transaction was required to develop or test this package.
 
-The third-party OpenZeppelin and forge-std dependency subset, licenses and exact source hashes are included in `lib/`. The compiler is Solidity 0.8.36. Deployment manifests are ignored by Git, never contain a private key, and are restricted to the creating user account.
+The third-party OpenZeppelin and forge-std dependency subset, licenses and exact source hashes are included in `lib/`. The compiler is Solidity 0.8.36. Deployment manifests are ignored by Git and never contain a private key.

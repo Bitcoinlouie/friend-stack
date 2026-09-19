@@ -118,8 +118,7 @@
     "deploy:contracts": "npm run build:contracts && npm run sync:contracts && npm run build && node scripts/contracts/deploy.mjs",
     "play:contracts": "node scripts/contracts/play.mjs",
     "resolve:contracts": "node scripts/contracts/resolve.mjs",
-    "check:games": "node scripts/check-games.mjs",
-    "preview": "node scripts/preview.mjs"
+    "check:games": "node scripts/check-games.mjs"
   },
   "dependencies": {
     "viem": "2.56.3"

@@ -1,14 +1,21 @@
 // PLAYWRIGHT_MODULE=/path/to/playwright node scripts/check-fishing-browser.mjs
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createStaticServer } from './preview.mjs';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const server = createStaticServer(fileURLToPath(new URL('../examples/fishing/dist/', import.meta.url)));
+const base = new URL('../examples/fishing/dist/', import.meta.url);
+const server = createServer(async (request, response) => {
+  const path = new URL(request.url, 'http://localhost').pathname;
+  const files = { '/': 'index.html', '/demo.js': 'demo.js', '/demo.css': 'demo.css' };
+  if (!files[path]) { response.writeHead(404).end(); return; }
+  try {
+    const data = await readFile(new URL(files[path], base));
+    response.writeHead(200, { 'content-type': path.endsWith('.js') ? 'text/javascript' : path.endsWith('.css') ? 'text/css' : 'text/html' }).end(data);
+  } catch { response.writeHead(500).end(); }
+});
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ headless: true });
@@ -93,7 +100,7 @@ try {
     await button('Reset walking position').click();
     await bounds();
     await button('Close Settings').click();
-    await page.screenshot({ path: join(tmpdir(), `friendsdk-frame-${viewport.width}.png`) });
+    await page.screenshot({ path: `/tmp/friendsdk-frame-${viewport.width}.png` });
     assert.deepEqual(errors, [], 'No browser runtime errors');
     await context.close();
     console.log(`PASS ${viewport.width}px: contained menus, selection, separate ledgers, buy/cast/keep/sell, wallet, odds, settings.`);

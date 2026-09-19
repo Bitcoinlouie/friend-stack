@@ -1,9 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
-import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
-import { tmpdir, userInfo } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { encodeAbiParameters, encodeEventTopics, parseAbi, zeroHash } from 'viem';
 import { parseChanceGame } from '../dist/game.js';
@@ -201,23 +200,7 @@ test('manifest persists exact base-unit strings with restricted permissions and 
   try {
     const file = join(dir, 'deployment.json');
     await saveManifest(file, manifest());
-    if (process.platform === 'win32') {
-      // Only the access entries carry ':('; the summary lines are localized and must not be parsed.
-      const entries = execFileSync('icacls', [file], { encoding: 'utf8' })
-        .split(/\r?\n/).filter(line => line.includes(':(')).map(line => line.replace(file, '').trim());
-      const shown = JSON.stringify(entries);
-      // SYSTEM and Administrators are the machine's root-equivalents, and POSIX 0600 does not
-      // exclude root either; Administrators can take ownership whatever the DACL says. Their
-      // names are localized, so the well-known SIDs count too. Any other principal, or any
-      // surviving inherited entry, means the restriction did not take.
-      const administrative = /^(?:NT AUTHORITY\\SYSTEM|BUILTIN\\Administrators|S-1-5-18|S-1-5-32-544):/i;
-      const self = new RegExp(`\\\\${userInfo().username}:`, 'i');
-      assert.ok(entries.some(entry => self.test(entry) && entry.endsWith(':(F)')), `No full access for the current account: ${shown}`);
-      assert.deepEqual(entries.filter(entry => !self.test(entry) && !administrative.test(entry)), [], `Unexpected principal: ${shown}`);
-      assert.ok(!entries.some(entry => entry.includes('(I)')), `An inherited access entry remains: ${shown}`);
-    } else {
-      assert.equal((await stat(file)).mode & 0o777, 0o600);
-    }
+    assert.equal((await stat(file)).mode & 0o777, 0o600);
     assert.equal((await loadManifest(file)).initialStake, '10');
     assert.ok(!(await readFile(file, 'utf8')).includes('privateKey'));
     await saveManifest(file, { ...manifest(), rf: GAME });

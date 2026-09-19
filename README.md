@@ -50,7 +50,7 @@ The command builds contracts and SDK bindings first. It defaults to `examples/fi
 npm run deploy:contracts -- games/my-game/game.json
 ```
 
-It prints and saves `contracts/deployments/4663-<game-address>.json` after confirmation. The manifest contains addresses, terms and transaction hashes; **no private key**. On Linux and macOS the file is readable only by your user; on Windows the script restricts it to your account and prints a warning if it cannot. Neither shuts out an administrator. Set the shell variable below to the actual printed path:
+It prints and saves `contracts/deployments/4663-<game-address>.json` after confirmation. The manifest contains addresses, terms and transaction hashes; **no private key**. Set the shell variable below to the actual printed path:
 
 ```sh
 FRIENDSDK_DEPLOYMENT='contracts/deployments/4663-0xYOUR_GAME_ADDRESS.json'
@@ -91,10 +91,10 @@ Resolution reuses the existing request; it does not buy another play or reroll. 
 This optional UI preview uses sample Friends and simulated balances. Your real NFT is used by the mainnet commands above.
 
 ```sh
-npm run preview
+python3 -m http.server 4178 --directory examples/fishing/dist
 ```
 
-Open `http://127.0.0.1:4178`. Read [AGENTS.md](AGENTS.md) and [API.md](API.md), and copy [the fishing example](examples/fishing/README.md) into `games/<name>` to start building.
+Open `http://localhost:4178` (Python 3 is needed only for this command). Read [AGENTS.md](AGENTS.md) and [API.md](API.md), and copy [the fishing example](examples/fishing/README.md) into `games/<name>` to start building.
 
 The deployment creates only `ChanceGame` and its bound `Consumable`. Dice Protocol supplies randomness through its existing mainnet oracle. See [contract setup, resolution, and testing](contracts/README.md) for the complete flow. The browser fishing example stays a local preview; use the SDK host transport with the saved deployment to build a connected game.
 

@@ -13,8 +13,7 @@ Non-goals: no change to contracts, game definitions, SDK modules, the host trans
 - `scripts/contracts/common.mjs` `saveManifest` writes `<path>.tmp` with mode `0o600`, then renames it over `<path>`. Windows ignores the mode. The deploy script calls it through a `save` helper after every submitted and confirmed transaction, so a save failure on the first call would leave a broadcast deployment with no manifest.
 - `tests/contracts-cli.test.mjs:203` asserts `mode & 0o777 === 0o600` and fails on Windows.
 - `tests/friend-world.test.mjs:244` passes `new URL(...).pathname` to esbuild, which is `/E:/...` on Windows and fails. esbuild's metafile input keys are forward-slash relative paths on Windows, so the existing ending regex is fine once the entry path is correct.
-- `icacls <file> /inheritance:r /grant:r <account>:F` in one call removes every `(I)` inherited entry and leaves `DOMAIN\user:(F)`. Renaming the file keeps the entry. `os.userInfo().username` names the same account. Verified on this machine.
-  - **Corrected during execution.** On this machine that leaves *exactly one* entry, but that does not generalize: `/inheritance:r` removes only inherited entries and `/grant:r` replaces only the named account's, so any *explicit* entry for another principal survives both. The GitHub `windows-latest` runner creates files in `TEMP` with explicit `NT AUTHORITY\SYSTEM:(F)` and `BUILTIN\Administrators:(F)` entries, so three remain there. Those two are the machine's root-equivalents, and POSIX `0600` does not exclude root either, so this still meets the outcome; stripping them would be stricter than the POSIX baseline and would break backup and anti-virus tooling, and Administrators can take ownership regardless. The writer is unchanged; the assertion below is what needed correcting.
+- `icacls <file> /inheritance:r /grant:r <account>:F` in one call leaves exactly one access entry, `DOMAIN\user:(F)`, with no `(I)` inherited entries. Renaming the file keeps the entry. `os.userInfo().username` names the same account. Verified on this machine.
 - `scripts/build-fishing.mjs` writes `examples/fishing/dist/index.html`, `demo.js` and `demo.css`. `scripts/build-embedded.mjs` writes the embed page to the repo-root `dist/embed/`, not the preview directory.
 - `scripts/check-fishing-browser.mjs` contains an inline three-file HTTP server and writes screenshots to `/tmp/friendsdk-frame-<width>.png`.
 - `.github/workflows/check.yml` has one `ubuntu-latest` job on Node 22 with Foundry v1.7.1 running every check. `tests/contracts-anvil.test.mjs` skips itself with a printed reason when `anvil` is missing.
@@ -37,7 +36,7 @@ Non-goals: no change to contracts, game definitions, SDK modules, the host trans
 
 - Keep one test. Branch on `process.platform`.
 - POSIX branch: the existing `mode & 0o777 === 0o600` assertion.
-- Windows branch: run `execFileSync('icacls', [file], { encoding: 'utf8' })`. Select only the output lines that contain `:(`, which are the access entries; the summary lines are localized and must not be parsed. Strip the file path prefix from the first entry. Assert that the current account has a `:(F)` entry, that no entry names a principal other than that account or an administrative one (`NT AUTHORITY\SYSTEM`, `BUILTIN\Administrators`, or their well-known SIDs, since the names are localized), and that no entry contains `(I)`. An unrestricted file fails this on two independent counts — foreign principals and inherited entries — so the assertion keeps its teeth.
+- Windows branch: run `execFileSync('icacls', [file], { encoding: 'utf8' })`. Select only the output lines that contain `:(`, which are the access entries; the summary lines are localized and must not be parsed. Strip the file path prefix from the first entry. Assert exactly one entry remains, that it matches `\<username>:(F)` case-insensitively where `username` is `os.userInfo().username`, and that no entry contains `(I)`.
 - The remaining assertions (base-unit strings, no `privateKey`, substituted `rf` rejected) are unchanged.
 - Deliberately not covered: the warning path when `icacls` fails. Simulating that would need command injection into the writer; the behavior is a warning, not a guard, and is reviewed by reading.
 
@@ -138,7 +137,7 @@ Non-goals: no change to contracts, game definitions, SDK modules, the host trans
 ## Done
 
 - `npm test`, `npm run typecheck` and `npm run check:games` pass on Windows without Foundry; the Anvil test is reported skipped with its reason.
-- On Windows a freshly saved manifest grants the creating account full access, carries no inherited entry and names no other principal except the machine's administrative ones, and the unit test asserts it; on POSIX the mode is `0600` and the test asserts that.
+- On Windows a freshly saved manifest has a single `icacls` entry for the creating account, and the unit test asserts it; on POSIX the mode is `0600` and the test asserts that.
 - `npm run preview` serves `examples/fishing/dist` on `127.0.0.1:4178`, refuses to start without a build, and both READMEs document it with no mention of Python.
 - The Playwright check runs on Windows using the shared server and writes screenshots to the temp directory.
 - `check.yml` has a green Windows job running the SDK-side checks and an unchanged Ubuntu job running everything.
