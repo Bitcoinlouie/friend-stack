@@ -23,3 +23,20 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run check:games
+
+  # The SDK-side checks only. Contract build, ABI verification and contract
+  # tests stay on the Ubuntu job, which is the only one with Foundry.
+  check-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run check:games
