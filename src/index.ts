@@ -6,3 +6,5 @@ export * from "./friend-sprites.js";
 export * from "./identity.js";
 export * from "./friend-sounds.js";
 export * from "./items.js";
+export * from "./wallet.js";
+export * from "./owned-friends.js";

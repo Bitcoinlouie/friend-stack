@@ -1,12 +1,13 @@
-import { decodeFunctionResult, encodeFunctionData, isAddress, parseAbi, parseEventLogs, zeroAddress, type Address, type Hex, type PublicClient, type TransactionReceipt, type WalletClient } from 'viem';
+import { encodeFunctionData, isAddress, parseAbi, parseEventLogs, zeroAddress, type Address, type Hex, type PublicClient, type TransactionReceipt, type WalletClient } from 'viem';
 import { CHANCE_GAME_ABI } from './chance-game-abi.js';
 
 export type ChanceDeployment = Readonly<{ chainId: number; game: Address; generations: Address; rf: Address }>;
-export type ChancePublicClient = Pick<PublicClient, 'getChainId' | 'getBlockNumber' | 'getBlock' | 'readContract' | 'simulateContract' | 'waitForTransactionReceipt'>;
+export type ChancePublicClient = Pick<PublicClient, 'getChainId' | 'getBlockNumber' | 'getBlock' | 'readContract' | 'waitForTransactionReceipt'>;
 export type ChanceWalletClient = Pick<WalletClient, 'chain' | 'getChainId' | 'getAddresses' | 'writeContract'>;
 export type ChanceTransportOptions = Readonly<{
   deployment: ChanceDeployment; account: Address; publicClient: ChancePublicClient;
   walletClient?: ChanceWalletClient; confirmations?: number;
+  selectedFriend?: Readonly<{ friendId: bigint; recipient: Address }>;
 }>;
 export type ChanceTransactionFailure = 'unconfirmed' | 'reverted' | 'replaced' | 'reorg' | 'unverified';
 
@@ -78,7 +79,11 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
       throw new Error('Observed block was reorganized; refresh before continuing.');
     }
   }
-  async function terms(blockNumber: bigint) {
+  let cachedTerms: { consumable: Address; price: bigint; maxPrize: bigint; outcomeCount: bigint } | undefined;
+  const recipients = new Map<bigint, Address>(), rewards = new Map<bigint, bigint>();
+  const committedPlays = new Map<bigint, { playId: bigint; friendId: bigint; batchId: bigint; outcomeId: bigint }>();
+  if (options.selectedFriend) recipients.set(uint(options.selectedFriend.friendId, 'Friend ID'), address(options.selectedFriend.recipient));
+  async function terms(blockNumber?: bigint) {
     const [boundRF, boundGenerations, consumable, price, maxPrize, outcomeCount] = await Promise.all([
       client.readContract({ address: game, abi: CHANCE_GAME_ABI, functionName: 'rf', blockNumber }),
       client.readContract({ address: game, abi: CHANCE_GAME_ABI, functionName: 'generations', blockNumber }),
@@ -90,7 +95,7 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     if (!equal(boundRF, rf) || !equal(boundGenerations, generations)) throw new Error('Game does not match the pinned RF/Generations deployment.');
     address(consumable); uint(price, 'game price'); uint(maxPrize, 'maximum prize');
     if (outcomeCount < 1n || outcomeCount > 10_000n) throw new Error('Invalid deployed outcome table.');
-    return { consumable, price, maxPrize, outcomeCount };
+    return cachedTerms = { consumable, price, maxPrize, outcomeCount };
   }
   async function friend(friendId: bigint, blockNumber: bigint) {
     uint(friendId, 'Friend ID');
@@ -116,50 +121,44 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     await checkBlock(head);
     return { ...head, ...gameTerms, selected };
   }
-  const control = (selected: Awaited<ReturnType<typeof friend>>) => {
-    if (!selected.canControl) throw new Error('Wallet must control a hardwired Generations Friend.');
-  };
-
-  async function send(selected: Awaited<ReturnType<typeof friend>>, functionName: 'approve' | 'buy' | 'play' | 'settle' | 'redeem', args: readonly bigint[] | readonly [Address, bigint]) {
-    await checkChain(); await signer();
-    async function checkSelected() {
-      const head = await block(), current = await friend(selected.friendId, head.blockNumber);
-      control(current);
-      if (!equal(current.recipient, selected.recipient)) throw new Error('Selected Friend wallet changed.');
-      await checkBlock(head);
+  // Deployment terms and the canonical address are stable session metadata. Contracts
+  // enforce ownership, inventory and balances when executing the fixed action.
+  async function writeContext(friendId: bigint) {
+    uint(friendId, 'Friend ID');
+    if (!cachedTerms) { await checkChain(); await terms(); }
+    let recipient = recipients.get(friendId);
+    if (!recipient) {
+      recipient = address(await client.readContract({ address: generations, abi: GENERATIONS_ABI,
+        functionName: 'tokenBoundAccount', args: [friendId] }));
+      recipients.set(friendId, recipient);
     }
-    await checkSelected();
+    return { ...cachedTerms!, selected: { friendId, recipient } };
+  }
+  async function send(selected: { friendId: bigint; recipient: Address }, functionName: 'approve' | 'buy' | 'play' | 'settle' | 'redeem', args: readonly bigint[] | readonly [Address, bigint]) {
+    await signer();
     const target = functionName === 'approve' ? rf : game;
     const abi = functionName === 'approve' ? ERC20_ABI : CHANCE_GAME_ABI;
     const data = encodeFunctionData({ abi, functionName, args } as Parameters<typeof encodeFunctionData>[0]);
     const execution = { address: selected.recipient, abi: FRIEND_WALLET_ABI, functionName: 'execute' as const,
       args: [target, 0n, data, 0] as const, account, value: 0n };
-    const simulation = await client.simulateContract(execution);
-    if (functionName === 'approve' && decodeFunctionResult({ abi: ERC20_ABI, functionName: 'approve', data: simulation.result }) !== true) {
-      throw new Error('Friend wallet RF approval simulation returned false.');
-    }
-    await checkSelected();
-    await checkChain(); await signer();
-    const transactionHash = await wallet!.writeContract({ ...simulation.request,
-      ...execution, chain: wallet!.chain });
+    const transactionHash = await wallet!.writeContract({ ...execution, chain: wallet!.chain });
     let receipt: TransactionReceipt;
     try { receipt = await client.waitForTransactionReceipt({ hash: transactionHash, confirmations }); }
     catch (cause) { throw new ChanceTransactionError('unconfirmed', transactionHash, 'Transaction confirmation is unknown; inspect the hash before retrying.', { cause }); }
     if (!equal(receipt.transactionHash, transactionHash)) throw new ChanceTransactionError('replaced', transactionHash, `Transaction was replaced by ${receipt.transactionHash}; inspect that receipt.`);
     if (receipt.status !== 'success') throw new ChanceTransactionError('reverted', transactionHash, 'Transaction reverted.');
-    try { await checkBlock({ blockNumber: receipt.blockNumber, blockHash: receipt.blockHash }); }
-    catch (cause) { throw new ChanceTransactionError('reorg', transactionHash, 'Receipt is no longer confirmed on the expected chain.', { cause }); }
     return { transactionHash, receipt };
   }
   async function verified<T>(result: Awaited<ReturnType<typeof send>>, check: (receipt: TransactionReceipt) => Promise<T>) {
-    try {
-      const details = await check(result.receipt);
-      await checkBlock({ blockNumber: result.receipt.blockNumber, blockHash: result.receipt.blockHash });
-      return { mode: 'chain' as const, transactionHash: result.transactionHash,
-        blockNumber: result.receipt.blockNumber, blockHash: result.receipt.blockHash, ...details };
-    } catch (cause) {
+    let details: T;
+    try { details = await check(result.receipt); }
+    catch (cause) {
       throw new ChanceTransactionError('unverified', result.transactionHash, 'Receipt succeeded but its game result could not be verified; inspect before retrying.', { cause });
     }
+    try { await checkBlock({ blockNumber: result.receipt.blockNumber, blockHash: result.receipt.blockHash }); }
+    catch (cause) { throw new ChanceTransactionError('reorg', result.transactionHash, 'Receipt is no longer confirmed on the expected chain.', { cause }); }
+    return { mode: 'chain' as const, transactionHash: result.transactionHash,
+      blockNumber: result.receipt.blockNumber, blockHash: result.receipt.blockHash, ...details };
   }
   const gameLogs = (receipt: TransactionReceipt) => receipt.logs.filter(log => equal(log.address, game));
   function transfer(receipt: TransactionReceipt, token: Address, from: Address, to: Address, amount: bigint) {
@@ -175,7 +174,8 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     uint(playId, 'play ID');
     const [friendId, batchId, outcomeId] = await client.readContract({ address: game, abi: CHANCE_GAME_ABI, functionName: 'plays', args: [playId], blockNumber });
     if (batchId === 0n) throw new Error('Unknown play.');
-    return { playId, friendId, batchId, outcomeId };
+    const play = { playId, friendId, batchId, outcomeId };
+    committedPlays.set(playId, play); return play;
   }
 
   return Object.freeze({ mode: 'chain' as const, deployment, account,
@@ -193,6 +193,8 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
       ]);
       await checkBlock(ctx);
       if (stake < reservedPlays + rewardLiability) throw new Error('Game stake is below recorded liabilities.');
+      recipients.set(friendId, selected.recipient);
+      outcomes.forEach(([, reward], index) => rewards.set(ids[index], reward));
       return { mode: 'chain' as const, deployment, blockNumber: ctx.blockNumber, blockHash: ctx.blockHash, ...selected,
         payer: selected.recipient, payerRF: recipientRF, recipientRF, consumables, stake, reservedPlays, rewardLiability,
         freeStake: stake - reservedPlays - rewardLiability, price: ctx.price, maxPrize: ctx.maxPrize,
@@ -200,7 +202,7 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     },
     async approvePurchase(friendId: bigint, quantity: bigint) {
       uint(quantity, 'quantity');
-      const ctx = await context(friendId); control(ctx.selected!);
+      const ctx = await writeContext(friendId);
       const amount = uint(ctx.price * quantity, 'purchase cost');
       return verified(await send(ctx.selected!, 'approve', [game, amount]), async receipt => {
         const events = parseEventLogs({ abi: ERC20_ABI, eventName: 'Approval', strict: true, logs: receipt.logs.filter(log => equal(log.address, rf)) });
@@ -210,7 +212,7 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     },
     async buy(friendId: bigint, quantity: bigint) {
       uint(quantity, 'quantity');
-      const ctx = await context(friendId); control(ctx.selected!);
+      const ctx = await writeContext(friendId);
       const payment = uint(ctx.price * quantity, 'purchase cost');
       return verified(await send(ctx.selected!, 'buy', [friendId, quantity]), async receipt => {
         const events = parseEventLogs({ abi: CHANCE_GAME_ABI, eventName: 'Purchased', logs: gameLogs(receipt), strict: true });
@@ -222,7 +224,7 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     },
     async play(friendId: bigint, quantity = 1n) {
       uint(quantity, 'quantity');
-      const ctx = await context(friendId); control(ctx.selected!);
+      const ctx = await writeContext(friendId);
       return verified(await send(ctx.selected!, 'play', [friendId, quantity]), async receipt => {
         const events = parseEventLogs({ abi: CHANCE_GAME_ABI, eventName: 'Played', logs: gameLogs(receipt), strict: true });
         if (BigInt(events.length) !== quantity || events.some(event => event.args.friendId !== friendId)) throw new Error('Committed plays do not match.');
@@ -236,13 +238,15 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
       });
     },
     async readPlay(playId: bigint) {
-      const ctx = await context(), play = await playAt(playId, ctx.blockNumber);
+      const ctx = await block(), play = await playAt(playId, ctx.blockNumber);
       await checkBlock(ctx);
       return { mode: 'chain' as const, blockNumber: ctx.blockNumber, blockHash: ctx.blockHash, ...play };
     },
-    async settle(playId: bigint) {
-      const ctx = await context(), before = await playAt(playId, ctx.blockNumber);
-      const selected = await friend(before.friendId, ctx.blockNumber); control(selected);
+    async settle(playId: bigint, committed?: Awaited<ReturnType<typeof playAt>>) {
+      uint(playId, 'play ID');
+      if (committed && committed.playId !== playId) throw new Error('Committed play ID does not match.');
+      const before = committed ?? committedPlays.get(playId) ?? await playAt(playId, await client.getBlockNumber({ cacheTime: 0 }));
+      const ctx = await writeContext(before.friendId), selected = ctx.selected;
       if (before.outcomeId !== 0n) throw new Error('Play is already settled.');
       return verified(await send(selected, 'settle', [playId]), async receipt => {
         const events = parseEventLogs({ abi: CHANCE_GAME_ABI, eventName: 'Settled', logs: gameLogs(receipt), strict: true });
@@ -256,9 +260,13 @@ export function createChanceGameTransport(options: ChanceTransportOptions) {
     },
     async redeem(friendId: bigint, outcomeId: bigint, quantity: bigint) {
       uint(quantity, 'quantity'); uint(outcomeId, 'outcome ID');
-      const ctx = await context(friendId); control(ctx.selected!);
+      const ctx = await writeContext(friendId);
       if (outcomeId > ctx.outcomeCount) throw new RangeError('Unknown outcome.');
-      const [, reward] = await client.readContract({ address: game, abi: CHANCE_GAME_ABI, functionName: 'outcomes', args: [outcomeId], blockNumber: ctx.blockNumber });
+      let reward = rewards.get(outcomeId);
+      if (reward === undefined) {
+        [, reward] = await client.readContract({ address: game, abi: CHANCE_GAME_ABI, functionName: 'outcomes', args: [outcomeId] });
+        rewards.set(outcomeId, reward);
+      }
       const payment = uint(reward * quantity, 'redemption value');
       return verified(await send(ctx.selected!, 'redeem', [friendId, outcomeId, quantity]), async receipt => {
         const events = parseEventLogs({ abi: CHANCE_GAME_ABI, eventName: 'Redeemed', logs: gameLogs(receipt), strict: true });

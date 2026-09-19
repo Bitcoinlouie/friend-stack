@@ -4,3 +4,5 @@ dist/
 contracts/out/
 contracts/cache/
 contracts/deployments/
+
+.friendsdk/

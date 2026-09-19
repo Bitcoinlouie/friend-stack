@@ -1,4 +1,4 @@
-import type { ChanceGameDefinition, GameSnapshot, PreviewGameClient } from './game.js';
+import type { ChanceGameDefinition, GameSnapshot, GameClient } from './game.js';
 
 export type GameMethod = 'read' | 'canBuy' | 'buy' | 'play' | 'settle' | 'redeem';
 export type GameArguments = readonly (bigint | number)[];
@@ -15,11 +15,45 @@ function valid(method: unknown, args: unknown, outcomes: number): args is (bigin
   }
 }
 
+// Provider errors can contain private RPC URLs, API keys, request bodies and wallet
+// diagnostics. Only SDK-authored public messages cross the community-game boundary.
+const PUBLIC_ACTION_ERRORS = new Set([
+  'Game session changed.', 'Game action cancelled.', 'Cancelled',
+  'Another game action is pending.', 'Another game transaction is pending.',
+  'Close the host menu before playing.', 'Choose a quantity from 1 through 99.',
+  'Invalid outcome.', 'Invalid play ID.', 'This play belongs to a different Friend.',
+  'Dice fee exceeds the approved maximum. Keep this pending cast and review the fee before retrying.',
+]);
+function publicError(error: unknown, method: GameMethod): string {
+  if (error instanceof Error) {
+    const transaction = error as Error & { code?: unknown; transactionHash?: unknown };
+    if (transaction.name === 'ChanceTransactionError' && typeof transaction.transactionHash === 'string' &&
+        /^0x[0-9a-f]{64}$/i.test(transaction.transactionHash)) {
+      const messages: Record<string, string> = {
+        unconfirmed: 'has an unknown confirmation status', replaced: 'was replaced',
+        reorg: 'is no longer confirmed on the expected chain', unverified: 'has an unverified game result',
+        reverted: 'reverted',
+      };
+      if (typeof transaction.code === 'string' && Object.hasOwn(messages, transaction.code)) {
+        return `Transaction ${transaction.transactionHash} ${messages[transaction.code]}. Inspect the transaction in your wallet before retrying the same action.`;
+      }
+    }
+    if (PUBLIC_ACTION_ERRORS.has(error.message) || /^Cast #[1-9][0-9]{0,77} is pending\. Finish that same cast before starting another\.$/.test(error.message)) {
+      return error.message;
+    }
+  }
+  return method === 'read' || method === 'canBuy'
+    ? 'Could not read game state. Retry the read.'
+    : 'Game action failed. Check your wallet and transaction status before trying the same action again.';
+}
+
 /** Trusted host only. Transfer the other port to the exact sandboxed iframe window. */
 export function bindGameFrame(port: MessagePort, options: {
-  client: PreviewGameClient;
+  client: GameClient;
   authorize: (method: GameMethod, args: GameArguments) => Promise<void>;
   onSnapshot?: (snapshot: GameSnapshot) => void;
+  onError?: (error: Error, method: GameMethod) => void;
+  onActionChange?: (busy: boolean) => void;
 }) {
   let alive = true, busy = false, lastId = 0, paused = false;
   const send = (message: unknown) => { if (alive) port.postMessage(message); };
@@ -33,12 +67,14 @@ export function bindGameFrame(port: MessagePort, options: {
     }
     if (busy) { send({ type: 'friendsdk:response', id, error: 'Another game action is pending.' }); return; }
     const method = request.method as GameMethod, args = request.args;
-    if (paused && ['buy', 'play', 'redeem'].includes(method)) {
+    const mutation = ['buy', 'play', 'redeem'].includes(method) || (method === 'settle' && options.client.mode === 'chain');
+    if (paused && mutation) {
       send({ type: 'friendsdk:response', id, error: 'Close the host menu before playing.' }); return;
     }
     busy = true;
+    if (mutation) options.onActionChange?.(true);
     try {
-      if (['buy', 'play', 'redeem'].includes(method)) await options.authorize(method, args);
+      if (mutation) await options.authorize(method, args);
       // Authorization may have waited on a menu while selection/account changed.
       if (!alive) return;
       let value: unknown;
@@ -51,11 +87,13 @@ export function bindGameFrame(port: MessagePort, options: {
         case 'redeem': value = await options.client.redeem(args[0] as number, args[1] as bigint); break;
       }
       if (!alive) return;
-      if (method !== 'canBuy') options.onSnapshot?.(method === 'read' ? value as GameSnapshot : await options.client.read());
+      if (method === 'read') options.onSnapshot?.(value as GameSnapshot);
+      else if (options.client.mode === 'preview' && method !== 'canBuy') options.onSnapshot?.(await options.client.read());
       send({ type: 'friendsdk:response', id, value });
     } catch (error) {
-      send({ type: 'friendsdk:response', id, error: error instanceof Error ? error.message : 'Game action failed.' });
-    } finally { busy = false; }
+      if (alive) options.onError?.(error instanceof Error ? error : new Error('Game action failed.'), method);
+      send({ type: 'friendsdk:response', id, error: publicError(error, method) });
+    } finally { busy = false; if (alive && mutation) options.onActionChange?.(false); }
   };
   port.start();
   return {
@@ -65,7 +103,7 @@ export function bindGameFrame(port: MessagePort, options: {
 }
 
 /** Game-side client. No signer, account selection, deployment, or arbitrary RPC. */
-export function createFrameGameClient(port: MessagePort, definition: ChanceGameDefinition, onPause?: (paused: boolean) => void) {
+export function createFrameGameClient(port: MessagePort, definition: ChanceGameDefinition, onPause?: (paused: boolean) => void, mode: GameClient["mode"] = "preview") {
   let nextId = 0, alive = true;
   const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>();
   const close = () => {
@@ -93,7 +131,7 @@ export function createFrameGameClient(port: MessagePort, definition: ChanceGameD
       port.postMessage({ type: 'friendsdk:request', id, method, args });
     });
   }
-  const client = Object.freeze<PreviewGameClient>({ mode: 'preview', definition,
+  const client = Object.freeze<GameClient>({ mode, definition,
     read: () => call('read', []), canBuy: quantity => call('canBuy', [quantity]),
     buy: quantity => call('buy', [quantity]), play: (quantity = 1n) => call('play', [quantity]),
     settle: playId => call('settle', [playId]), redeem: (outcomeId, quantity) => call('redeem', [outcomeId, quantity]),

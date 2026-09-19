@@ -30,10 +30,10 @@ flowchart LR
 
 - One bait always creates one result.
 - Reeling adds tension but does not change the RF odds.
-- A perfect reel may award cosmetic progress only.
 - Bait and catches belong to the Friend and transfer with its NFT. No activation or tier requirement.
 - Kept fish retain their fixed redemption price indefinitely.
-- This is the isolated FriendSDK v1 reference in `examples/fishing`. It runs as a local preview and is not hosted by the production web app.
+- Run the reference component with `npm run dev:game -- examples/fishing`. The SDK runtime supplies wallet connection, owned Friend selection, eligibility checks, sandbox isolation and confirmations.
+- The owned Rare Friend moves through the world with keyboard/touch controls. The lake and bait vendor are interactable world locations; their menus support the world. No separate shop, collection, About or Store pages are required.
 
 ## Catch economy
 
@@ -105,7 +105,10 @@ Fish can always be sold at their original price. Their full value stays reserved
 
 ## Interface map
 
-| Screen | Essential elements |
+These are interactions and menus inside the game component, not application
+routes or pages. Reuse an existing container in the current project.
+
+| World interaction or menu | Essential elements |
 |---|---|
 | Bait Shop | Vendor, quantity, 1 RF price, odds link |
 | Lake | Friend, bait balance, cast, bobber, reel |

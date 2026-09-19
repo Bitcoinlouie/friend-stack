@@ -1,6 +1,17 @@
 # FriendSDK world rules
 
-These rules continue the approved Rare Friends Isometric World Assets collection. The SDK reuses its shallow camera, ground geometry, and vector prop artwork. The supplied worlds are editable off-chain assets; the character reader retrieves on-chain sprite pixels. The world presets are not on-chain maps or released games.
+Use the SDK’s shallow camera, ground geometry and vector prop artwork. The supplied worlds are editable off-chain assets; the character reader retrieves on-chain sprite pixels. The world presets are not on-chain maps or released games.
+
+## Default game experience
+
+Unless otherwise requested, deliver only the game component in the user's current
+project. The player controls their owned Rare Friend through keyboard and touch
+movement in a playable world. Place requested activities at interactable locations
+or objects: for example, a vendor to buy packs and a table to open them. Supporting
+menus handle those interactions; they do not replace the world with a page or
+dashboard. Do not add unrequested activities, site navigation, footers, About/Store
+pages or another application's frontend. Preserve the ownership and simulated
+economy requirements in [AGENTS.md](AGENTS.md).
 
 ## One camera
 

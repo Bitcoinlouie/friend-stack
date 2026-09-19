@@ -83,7 +83,7 @@ contract MockFriendWallet {
 }
 
 contract MockDice is IDiceEntropy {
-    uint128 public constant FEE = 0.000_05 ether;
+    uint128 public constant FEE = 0.000_025 ether;
     address public immutable provider;
     uint64 public sequenceNumber;
     mapping(uint64 => address) public consumers;
@@ -422,29 +422,29 @@ contract ChanceGameTest is Test {
         game.settle(playId);
         vm.warp(block.timestamp + 365 days);
         vm.expectRevert(ChanceGame.RandomnessAlreadyRequested.selector);
-        game.requestRandomness{ value: 0.000_05 ether }(batchId);
+        game.requestRandomness{ value: 0.000_025 ether }(batchId);
         assertEq(game.reservedPlays(), 10 ether);
         _assertBacking();
     }
 
     function testSponsorRequestsOnlyCommittedBatchesAndExactFee() public {
         vm.expectRevert(ChanceGame.InvalidBatch.selector);
-        game.requestRandomness{ value: 0.000_05 ether }(0);
+        game.requestRandomness{ value: 0.000_025 ether }(0);
         vm.expectRevert(ChanceGame.InvalidBatch.selector);
-        game.requestRandomness{ value: 0.000_05 ether }(1);
+        game.requestRandomness{ value: 0.000_025 ether }(1);
         game.fund(20 ether);
         _buy(ALICE, ALICE_FRIEND, 2);
         vm.prank(ALICE);
         game.play(ALICE_FRIEND, 2);
         vm.expectRevert(ChanceGame.InvalidBatch.selector);
-        game.requestRandomness{ value: 0.000_05 ether }(2);
+        game.requestRandomness{ value: 0.000_025 ether }(2);
         vm.expectRevert(ChanceGame.IncorrectOracleFee.selector);
-        game.requestRandomness{ value: 0.000_04 ether }(1);
+        game.requestRandomness{ value: 0.000_024 ether }(1);
         vm.expectRevert(ChanceGame.IncorrectOracleFee.selector);
-        game.requestRandomness{ value: 0.000_06 ether }(1);
+        game.requestRandomness{ value: 0.000_026 ether }(1);
         dice.setFailRequests(true);
         vm.expectRevert(MockDice.RequestFailed.selector);
-        game.requestRandomness{ value: 0.000_05 ether }(1);
+        game.requestRandomness{ value: 0.000_025 ether }(1);
         (uint64 sequence, bool requested, bool fulfilled,) = game.randomness(1);
         assertEq(sequence, 0);
         assertFalse(requested);
@@ -452,10 +452,10 @@ contract ChanceGameTest is Test {
         dice.setFailRequests(false);
         vm.deal(BOB, 1 ether);
         vm.prank(BOB);
-        sequence = game.requestRandomness{ value: 0.000_05 ether }(1);
+        sequence = game.requestRandomness{ value: 0.000_025 ether }(1);
         assertEq(sequence, 1);
         assertEq(address(game).balance, 0);
-        assertEq(address(dice).balance, 0.000_05 ether);
+        assertEq(address(dice).balance, 0.000_025 ether);
     }
 
     function testCallbackAuthenticationUnknownRequestsReplayAndZeroWord() public {

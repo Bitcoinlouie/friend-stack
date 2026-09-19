@@ -1,27 +1,130 @@
-# V1 fishing reference
+# Fishing example · FriendSDK v0.1
 
-From the repository root:
+Fishing demonstrates a playable world, keyboard/touch movement, vendors,
+collection and reward reveals. Build the requested game component in the user's
+current project directory. Use world objects and locations for activities, with
+menus supporting those interactions. Include surrounding website pages only
+when explicitly requested.
+
+The SDK runtime provides the 960 × 640 container, wallet connection, owned Friend
+selection, fresh hardwired-NFT eligibility checks, sandbox and confirmations.
+Every playable prototype requires the connected account to own an eligible
+Generations NFT, including simulated previews. See the
+[prototype requirements](../../README.md#required-prototype-identity-and-interface).
+
+Keep purchases, rewards and redemption simulated by default. Read-only ownership
+checks remain required. On-chain implementation is a later phase with the Rare
+Friends team after publishing requirements are met, unless explicitly requested.
+Transactions, deployment and publication require their applicable authorization.
+
+## Run the example
+
+From the SDK root, with Node.js 22+:
 
 ```sh
 npm ci
-npm run build
-python3 -m http.server 4178 --directory examples/fishing/dist
+npm run dev:fishing
 ```
 
-Open http://localhost:4178, choose a sample Friend, buy bait, visit the lake, cast, reel in, then keep or sell. The standard 960 × 640 frame contains every game control, menu, odds table, Friend selector, wallet view and action confirmation. Small screens keep the same ratio; menus scroll inside the frame.
+Use the displayed local URL. Connect a wallet, select an owned eligible Friend,
+walk to the bait vendor to buy bait, then walk to the lake to cast. Reel in and
+keep or sell the catch. Collection, reveals, odds and settings stay in the frame.
+The runtime labels the simulated balances and outcomes.
 
-`FishingGame` is only the developer viewport. The trusted host supplies `GameFrame`, the selected Friend ID and the defined game client. The standalone `FishingPreview` is a local host fixture. The build also emits `dist/embed/fishing-frame.html` for isolated sandboxed-host experiments; it requires the host handshake described in `API.md`. The production web app does not host this example. A developer cannot add UI outside the game container.
+`index.tsx` exports the fishing game component. `world.tsx` uses shared projection,
+collision, movement, assets and canonical Friend pixels. Arrows/WASD and click/tap
+move the Friend. Sound, reduced motion, loading and error states are supported.
+`game.json` defines the example's exact economy; `art.json` contains its eight
+collectible bitmaps. `sample-sprites.ts` records the source of canonical artwork
+samples. Artwork does not verify ownership.
 
-This remains a local preview. Each selected Friend has separate simulated RF, bait and catches; switching preserves them for this session. Reload clears them. Sample Friends are explicitly labeled and make no ownership claim. No preview action sends a transaction. The shared wallet and confirmation menus belong to the host.
+The [embedded example](../embedded/README.md) demonstrates the same runtime with
+a prebuilt sandbox child. [The runtime guide](../../HOST_INTEGRATION.md) documents
+the generic component interface and supported capabilities.
 
-`game.json` contains exact RF base-unit amounts and outcome weights. `index.tsx` uses the SDK game client, menus, sounds and reveals. `world.tsx` uses shared projection, collision, movement, assets and canonical Friend pixels. Artwork failures leave a labeled position marker. Arrows/WASD and click/tap move the Friend; menus support keyboard and touch. Settings contains mute, reduced motion and walking-position reset.
-
-The standalone starts each sample ledger with 20 RF and 100 RF of simulated stake. Every purchased bait reserves 10 RF. When free stake cannot cover the highest prize and the full purchase, new purchases stop. Purchased bait remains playable. Kept fish retain their backed RF value until sold, with no expiry.
-
-Each cast settles once before its reveal. Switching Friends leaves the settled catch in the original Friend’s collection. Production must use confirmed contract results and recover committed plays; this preview is not evidence of a live deployment.
-
-`art.json` contains the existing eight collectible bitmaps, not Friend character snapshots. Generated builds are ignored by Git. To verify the complete loop and container bounds at desktop and phone sizes:
+## Live play
 
 ```sh
-PLAYWRIGHT_MODULE=/path/to/playwright node scripts/check-fishing-browser.mjs
+npm run dev:fishing:live
 ```
+
+Open the displayed URL. To choose a listening interface and port, append
+`-- --host 0.0.0.0 --port 4187`. `deployment.json` selects
+Robinhood mainnet game `0x671a5080103cd44628d6725f8187aa2d2610f8b3`, deployed at
+block **67238313**. Live RF, bait, catches and available prize stake come from
+contract reads.
+
+Connect the NFT owner's wallet on chain **4663**. Use **Transfer RF to Friend**
+in the wallet menu to fund its canonical wallet, then buy bait at the vendor.
+Buying approves exactly the purchase cost before the purchase. Confirm each real
+transaction in your wallet and keep ETH available for gas. Resolving a cast may
+pay Dice's RNG fee of **0.000025 ETH**, excluding gas. The runtime caps its quoted
+fee at that amount and stops the request if the quote is higher.
+
+Rare Friends plans to subsidize RNG costs for **all developers** to improve the
+user experience and reduce costs. This demo does not implement that subsidy;
+it demonstrates wallet-paid RNG requests.
+
+Return to the lake and choose **Resume cast** for a pending play. This checks and
+settles its existing result without consuming more bait. A pending oracle result
+has no catch reveal. The runtime recovers pending plays after reload and refreshes
+state when a later step fails after a cast has committed. Rewards appear only
+after verified settlement; redemption returns RF to the same Friend wallet.
+
+Use `npm run dev:fishing` for the simulated preview.
+
+## Build and host
+
+| Mode | Build | Static output |
+| --- | --- | --- |
+| Simulated | `npm run build:fishing` | `examples/fishing/.friendsdk/preview/` |
+| Live | `npm run build:fishing:live` | `examples/fishing/.friendsdk/live/` |
+
+Use the chosen output directory as the static site root. Include every generated
+HTML, JavaScript, CSS and asset file and retain their relative paths. Upload the
+folder to an HTTPS static host; no backend or host-side build is needed. Follow the
+[static serving requirements](../../HOST_INTEGRATION.md#serving-and-sandbox).
+
+To use your own contract, follow the [deployment workflow](../../README.md#deploy-your-game-to-mainnet),
+then use the printed manifest:
+
+```sh
+npm run dev:game -- examples/fishing --deployment ./contracts/deployments/YOUR_DEPLOYMENT.json --outdir examples/fishing/.friendsdk/my-live
+node scripts/dev-game.mjs build examples/fishing --deployment ./contracts/deployments/YOUR_DEPLOYMENT.json --outdir ./examples/fishing/.friendsdk/my-live
+```
+
+Host `examples/fishing/.friendsdk/my-live/` for that deployment. Only public
+deployment fields enter the browser build. Omit `--deployment` for simulated
+actions.
+
+## Example economy
+
+Each preview ledger starts with **20 RF** and **100 RF** of simulated prize stake.
+Ledgers belong to the selected Friend and remain separate during a runtime
+session. Unmounting the runtime clears its preview state. All amounts use bigint
+RF base units.
+
+One bait costs **1 RF**, creates exactly one cast and reserves **10 RF** immediately.
+New purchases stop if free stake cannot cover the highest prize and the full
+purchase. Purchased bait remains playable. Kept fish retain their backed RF value
+until sold, with no expiry. Weights total **10,000 basis points**; expected reward
+is **0.90 RF**. See the [catch table and consumable rules](../../FISHING_GAME_DESIGN.md#catch-economy).
+
+Each cast settles once before its reveal. Reeling does not change the outcome.
+Hats, wearable NFTs, additional bait tiers, trading and creator fees are not
+implemented SDK capabilities.
+
+## Verify
+
+```sh
+npm test
+npm run typecheck
+npm run check:games
+npm run check:browser
+```
+
+The browser checks exercise the game at desktop and phone sizes and verify the
+runtime lifecycle. `npm run check:runtime` runs the generic runtime check alone.
+`npm run check:live` checks live-mode controls and pending recovery with mocked transactions.
+Mock accounts and sample Friends are automated test data only; playable
+prototypes use the runtime's real wallet and fresh ownership checks.

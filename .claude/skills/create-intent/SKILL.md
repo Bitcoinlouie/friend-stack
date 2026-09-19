@@ -15,14 +15,16 @@ FriendSDK is an isolated prototype kit for small RF chance games played with a
 hardwired Generations NFT on Robinhood mainnet. Read these before anything else:
 
 - `AGENTS.md` — the non-negotiable game, boundary and safety rules.
-- `README.md` — what the SDK contains, the v1 rules, the backing formula and
-  the build/deploy/play flow.
+- `README.md` — v0.1 setup, the AI-agent game workflow and submission requirements.
 - `API.md` — the exported modules, the host transport and the hosting boundary.
 - `WORLD_RULES.md`, `SOUND_KIT.md`, `FISHING_GAME_DESIGN.md` — when the idea
   touches scenes, Friend sprites, audio or the fishing reference.
 - `contracts/AGENTS.md` and `contracts/COMMANDMENTS.md` — when the idea
   touches Solidity, deployment tooling or the Dice flow.
-- `games/README.md` — when the idea is a new game submission.
+- `docs/oracle/README.md` — when the idea concerns oracle operations or recovery.
+
+Keep oracle-management intents under `docs/oracle/intent-<slug>.md`; other
+intents use `docs/intent-<slug>.md`.
 
 An intent must respect the rules already fixed by those documents. If the raw
 idea conflicts with one (a second currency, an expiry window, UI outside the
@@ -67,11 +69,11 @@ live deployment, and a deployment is not unattended operation.
    - Surface conflicts between the request and the repository rules.
    - If the input appears complete, summarize the intended interpretation and
      ask the user to confirm it.
-   - Confirm the `docs/intent-<slug>.md` path and whether an existing file may
+   - Confirm the topic-appropriate intent path and whether an existing file may
      be replaced.
 3. Wait for the answers. Do not write the intent in the same turn as the
    questions.
-4. Create or revise the confirmed `docs/intent-<slug>.md`.
+4. Create or revise the confirmed intent file.
 5. Re-read the result and remove assumptions, implementation-plan detail,
    repetition, and unsupported claims.
 
