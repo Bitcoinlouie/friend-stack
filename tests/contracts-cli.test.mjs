@@ -205,9 +205,10 @@ test('manifest persists exact base-unit strings with restricted permissions and 
       // Only the access entries carry ':('; the summary lines are localized and must not be parsed.
       const entries = execFileSync('icacls', [file], { encoding: 'utf8' })
         .split(/\r?\n/).filter(line => line.includes(':(')).map(line => line.replace(file, '').trim());
-      assert.equal(entries.length, 1, `Expected one access entry, got ${entries.length}`);
+      const shown = JSON.stringify(entries);
+      assert.equal(entries.length, 1, `Expected one access entry, got ${entries.length}: ${shown}`);
       assert.match(entries[0], new RegExp(`\\\\${userInfo().username}:\\(F\\)$`, 'i'));
-      assert.ok(!entries.some(entry => entry.includes('(I)')), 'No inherited access entry remains');
+      assert.ok(!entries.some(entry => entry.includes('(I)')), `An inherited access entry remains: ${shown}`);
     } else {
       assert.equal((await stat(file)).mode & 0o777, 0o600);
     }
