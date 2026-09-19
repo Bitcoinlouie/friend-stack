@@ -17,6 +17,8 @@ for (const path of paths) {
     absWorkingDir: root, entryPoints: [resolve(directory, 'index.tsx')], bundle: true,
     platform: 'browser', format: 'esm', target: 'es2022', jsx: 'automatic', write: false,
     outdir: 'unused', metafile: true, external: ['react', 'react/jsx-runtime', 'react-dom/client'],
+    loader: { '.png': 'file', '.jpg': 'file', '.webp': 'file', '.svg': 'file', '.woff2': 'file', '.mp3': 'file', '.wav': 'file' },
+    assetNames: 'assets/[name]-[hash]',
     plugins: [{ name: 'game-boundary', setup(builder) {
       builder.onResolve({ filter: /^@rarefriends\/friendsdk\/host$/ }, () => ({ errors: [{ text: 'Wallet transport belongs to the SDK runtime, not game code.' }] }));
     } }],

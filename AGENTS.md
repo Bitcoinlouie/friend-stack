@@ -16,7 +16,9 @@ navigation, routing, headers, footers, landing pages, About/Store pages, catalog
 or detail pages unless explicitly requested.
 
 Read README.md, API.md, WORLD_RULES.md and FISHING_GAME_DESIGN.md before changing a
-game. Use exported SDK modules and shared assets. Keep SDK reference content in
+game. Use the exported SDK runtime and game APIs. Choose world assets, art style,
+palette and camera to suit the requested game; the supplied scenery, world
+presets and renderer are optional. Keep SDK reference content in
 `examples/` or `games/`; consuming projects keep their components in that project.
 
 ## Use the package runtime
@@ -109,8 +111,9 @@ Do not expose funding or transaction clients to sandboxed game code.
 - Contracts determine paid outcomes. Animation, browser randomness and local
   balances are preview/presentation only. Claim a transaction only after a
   confirmed verified receipt.
-- Preserve canonical Friend pixels, world projection, collision and depth
-  sorting. Support keyboard/touch, mute, reduced motion, loading and errors.
+- Preserve canonical Friend pixels. Keep movement, collision, pointer input and
+  depth ordering consistent with the game's chosen camera and renderer. Support
+  keyboard/touch, mute, reduced motion, loading and errors.
 - Do not expose a signer, arbitrary calldata, deployment or bankroll withdrawal
   powers to game code.
 - Submit source/assets, run instructions, SDK version, exact RF cost, outcome

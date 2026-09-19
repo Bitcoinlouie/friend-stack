@@ -69,8 +69,8 @@ reads and transaction clients stay outside the game sandbox.
 | Module | Exports and use |
 | --- | --- |
 | `runtime` | `GameHost`, `ConnectedGameHost`, `GameSession`, `GameComponentProps`, `createLiveGameClient`, `LiveGameDeployment`, `LIVE_GAME_MAX_ORACLE_FEE`. Preview/live runtime and child session. |
-| `world-view` | `GameWorld`. Reusable world view with canonical Friend sprites and keyboard/touch movement. Import `world-view.css`. |
-| `world` | `WORLD_PRESETS`, `getWorldPreset`, `validateWorld`, `renderWorld`, `renderWorldLayers`, `renderProp`, `project`, `unproject`, `isWorldWalkable`. Geometry, props, collision and depth sorting. |
+| `world-view` | Optional `GameWorld` utility with canonical Friend sprites and keyboard/touch movement. Import `world-view.css` when using it. |
+| `world` | Optional world utilities: `WORLD_PRESETS`, `getWorldPreset`, `validateWorld`, `renderWorld`, `renderWorldLayers`, `renderProp`, `project`, `unproject`, `isWorldWalkable`. Geometry, props, collision and depth sorting. |
 | `navigation` | `createWorldNavigator(world, radius?, spacing?)`: collision-checked `route(from, to)` and `segmentClear(from, to)`. |
 | `movement` | `createWorldMovement(world, spawn, { speed?, radius? })`: `setKey`, `moveTo`, `update`, `stop`, `reset`, `state`. |
 | `assets` | `loadImage(url, signal?)`, `loadSvg(svg, signal?)`, `loadWorldAssets(world, renderOptions?, signal?)`. Terrain and ordered object images/depths. |
@@ -102,14 +102,22 @@ import "@rarefriends/friendsdk/reveal.css";
 
 ## World and artwork
 
-Low-level movement does not attach events. Forward keyboard/pointer input, call
-`update(deltaMs)` in the animation loop and `stop()` on blur, pause or hidden tabs.
+Choose the game's setting, assets, visual style, palette, camera and rendering
+approach. `GameWorld`, bundled world assets, presets and their illustration style
+are optional utilities and example choices. Custom worlds use the same runtime,
+sandbox, SDK menus and fixed action client.
+
+The SDK's low-level movement utility does not attach events. When using it,
+forward keyboard/pointer input, call `update(deltaMs)` in the animation loop,
+and `stop()` on blur, pause or hidden tabs.
 Speeds are screen pixels per second; `state.position` is a world point. Convert
 pointer coordinates through the viewport scale/crop, then `unproject`.
 
 The sprite reader uses the SDK's pinned artwork deployment. Art may be cached;
-ownership is verified separately. Preserve canonical pixels, projection,
-collision and depth order as specified in [WORLD_RULES.md](WORLD_RULES.md).
+ownership is verified separately. Preserve the selected Rare Friend's canonical
+sprite pixels and animation frames. Implement movement, collision and layering
+for the chosen world, with keyboard/touch controls and accessibility support.
+See [WORLD_RULES.md](WORLD_RULES.md).
 
 ## Identity and wallet lifecycle
 

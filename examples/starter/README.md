@@ -31,7 +31,9 @@ An owned hardwired Generations NFT is still required. The component only calls
 the SDK's fixed preview client. It does not deploy contracts or send transactions.
 No trading, creator fees or wearable NFTs are implemented.
 
-The source uses public SDK modules only. `GameWorld` renders shared canonical
-world props and the selected Friend's live sprites, preserves collision and depth
-sorting, and provides keyboard/touch movement. Change the world, interactions and
-game definition here when implementing the requested game's activities.
+The source uses public SDK modules only. This example uses `GameWorld` to render
+the bundled garden props and the selected Friend's live sprites, with collision,
+depth sorting and keyboard/touch movement. `GameWorld`, these assets, the camera
+and the garden's visual style are optional starting points. Build your own
+setting, assets and renderer to suit the requested game. Preserve canonical Rare
+Friend sprites, SDK menus/actions, keyboard/touch controls and accessibility.
