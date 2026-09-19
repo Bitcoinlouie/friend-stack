@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
+import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, userInfo } from 'node:os';
 import { join } from 'node:path';
 import { encodeAbiParameters, encodeEventTopics, parseAbi, zeroHash } from 'viem';
 import { parseChanceGame } from '../dist/game.js';
@@ -200,7 +201,16 @@ test('manifest persists exact base-unit strings with restricted permissions and 
   try {
     const file = join(dir, 'deployment.json');
     await saveManifest(file, manifest());
-    assert.equal((await stat(file)).mode & 0o777, 0o600);
+    if (process.platform === 'win32') {
+      // Only the access entries carry ':('; the summary lines are localized and must not be parsed.
+      const entries = execFileSync('icacls', [file], { encoding: 'utf8' })
+        .split(/\r?\n/).filter(line => line.includes(':(')).map(line => line.replace(file, '').trim());
+      assert.equal(entries.length, 1, `Expected one access entry, got ${entries.length}`);
+      assert.match(entries[0], new RegExp(`\\\\${userInfo().username}:\\(F\\)$`, 'i'));
+      assert.ok(!entries.some(entry => entry.includes('(I)')), 'No inherited access entry remains');
+    } else {
+      assert.equal((await stat(file)).mode & 0o777, 0o600);
+    }
     assert.equal((await loadManifest(file)).initialStake, '10');
     assert.ok(!(await readFile(file, 'utf8')).includes('privateKey'));
     await saveManifest(file, { ...manifest(), rf: GAME });

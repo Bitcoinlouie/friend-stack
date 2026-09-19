@@ -1,6 +1,9 @@
+import { execFile } from 'node:child_process';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { userInfo } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { createInterface } from 'node:readline/promises';
 import { createPublicClient, createWalletClient, defineChain, getAddress, isAddress, parseAbi, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -35,6 +38,7 @@ export const WALLET_ABI = parseAbi([
   'function token() view returns (uint256,address,uint256)',
 ]);
 export const ENTROPY_ABI = parseAbi(['function getFeeV2(address,uint32) view returns (uint128)']);
+const execFileAsync = promisify(execFile);
 export const equal = (a, b) => typeof a === 'string' && typeof b === 'string' && a.toLowerCase() === b.toLowerCase();
 export const json = value => JSON.stringify(value, (_, item) => typeof item === 'bigint' ? item.toString() : item, 2) + '\n';
 
@@ -110,9 +114,33 @@ export async function receipt(client, hash) {
   return result;
 }
 
+/** A reason short enough to print: never the command line, which carries the account name. */
+function icaclsReason(error) {
+  if (error?.killed || error?.signal) return 'icacls timed out';
+  if (error?.code === 'ENOENT') return 'icacls was not found';
+  if (typeof error?.code === 'number') return `icacls exited with code ${error.code}`;
+  return 'icacls failed';
+}
+
+/** Windows ignores the 0600 mode, so grant the creating account sole access before the rename. */
+async function restrictToCurrentUser(file) {
+  // Qualify with the domain so a same-named local account is not granted on a domain-joined machine.
+  const { username } = userInfo();
+  const account = process.env.USERDOMAIN ? `${process.env.USERDOMAIN}\\${username}` : username;
+  await execFileAsync('icacls', [file, '/inheritance:r', '/grant:r', `${account}:F`], { timeout: 10_000 });
+}
+
 export async function saveManifest(path, manifest) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(`${path}.tmp`, json(manifest), { mode: 0o600 });
+  if (process.platform === 'win32') {
+    // Restrict the temporary file so the final path never exists unrestricted.
+    try { await restrictToCurrentUser(`${path}.tmp`); }
+    catch (error) {
+      // Keep the deployment record: a failure here is a warning, not a guard. Never name the account.
+      console.error(`Could not restrict ${path} to the current Windows account: ${icaclsReason(error)}. The manifest contains no private key; review its permissions before sharing it.`);
+    }
+  }
   await rename(`${path}.tmp`, path);
 }
 
