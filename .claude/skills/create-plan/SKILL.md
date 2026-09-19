@@ -1,86 +1,105 @@
 ---
 name: create-plan
-description: Creates a codebase-grounded implementation plan in documentation/plan-<slug>.md from an explicitly identified intent. Use only when the user explicitly invokes /create-plan.
+description: Creates a codebase-grounded implementation plan in docs/plan-<slug>.md from an explicitly identified FriendSDK intent. Use only when the user explicitly invokes /create-plan.
 disable-model-invocation: true
 ---
 
 # Create Plan
 
 Turn an agreed intent into an implementation-ready plan grounded in the
-repository's current code, conventions, and tests.
+repository's current code, conventions, checks and tests.
 
-## Implementation, not measurement validation
+## Repository context
 
-A plan implements a FEATURE. It does not validate a measurement. Calibration,
-threshold tuning, agreement studies, and deciding whether an indicator tracks
-the construct it claims to are separate research efforts developed later under
-their own intent and plan.
+FriendSDK is an isolated prototype kit for small RF chance games. The plan must
+stay inside the rules fixed by `AGENTS.md`, `README.md`, `API.md` and, for
+contracts, `contracts/AGENTS.md` and `contracts/COMMANDMENTS.md`. The layers
+and where their proof lives:
 
-- The plan's tests validate the IMPLEMENTATION: that the code behaves as
-  specified, at its boundaries, without regressing what exists. They make no
-  claim that the resulting measurement is calibrated or valid, and the plan
-  must not imply they do.
-- Never plan new calibration runs, validation studies, or measurement harnesses
-  to prove an indicator is right. Only the user can add those to scope, by
-  asking for them specifically. Running EXISTING suites as regression gates is
-  normal verification and stays.
-- Every planned test costs review time and gate time forever. The test list is
-  a decision the user confirms, not a detail the plan buries.
-- Compute is not a constraint (§0.6). Never trim runs, repeats, or trials to
-  save tokens or time; if an approach needs more, plan for more and say so.
+| Layer | Source | Proof |
+| --- | --- | --- |
+| SDK modules | `src/` | `tests/*.test.mjs` via `npm test`; `npm run typecheck` |
+| Games and examples | `examples/`, `games/` | `npm run check:games`; the local preview |
+| Host transport and bridge | `src/chain.ts`, `src/frame-bridge.ts` | `tests/chain.test.mjs`, `tests/frame-bridge.test.mjs` |
+| Deployment and resolution tooling | `scripts/contracts/` | `tests/contracts-cli.test.mjs`, `tests/contracts-anvil.test.mjs` |
+| Contracts | `contracts/src/` | `contracts/test/*.t.sol` via `npm run test:contracts`; optional `MainnetForkTest` |
+| Generated bindings | `src/chance-game-abi.ts` | `npm run verify:contracts` |
 
-## Output integrity — designed in, not hoped for (§0.5)
+Fixed rules the plan must not work around:
 
-A plan that lets the tool present something untrue is worse than no plan. For
-every output the change can emit, answer both: *could this be shown when it
-isn't true, and what real step must have happened for it to be valid?* The
-second answer must be enforced in code the plan names — not merely intended.
+- Game code runs in a sandboxed 960 × 640 frame and calls only the fixed
+  actions (read, canBuy, buy, play, settle, redeem). It never imports the host
+  transport; `scripts/check-games.mjs` rejects that.
+- RF amounts are `bigint` base units; outcome weights total 10,000 basis points.
+- Contracts determine paid outcomes. Presentation never changes a paid result,
+  and nothing claims a transaction without a confirmed receipt.
+- Contract terms are immutable. Any Solidity change requires
+  `npm run build:contracts`, `npm run sync:contracts` and `npm run build`, and
+  means a new deployment; existing obligations stay with the old game.
+- No rerolls, cancellation, fallback entropy, mutable provider, pause controls,
+  proxies or administrators in contracts.
+- No private keys in source, environment files, manifests or logs. No mainnet
+  broadcast from automated checks or CI.
+- No production web routes, dependencies or assets; the production app has no
+  SDK integration.
+
+## Player-facing integrity — designed in, not hoped for
+
+A plan that lets the game or tooling present something untrue is worse than no
+plan. For every output the change can emit, answer both: *could this be shown
+when it isn't true, and what real step must have happened for it to be valid?*
+The second answer must be enforced in code the plan names — not merely intended.
 
 - The plan carries an explicit integrity section listing the risks it found and
   the mechanism that closes each one.
-- Watch for the recurring four: sample or illustrative data reaching the real
-  path; a displayed number kept in a second copy of a formula; a skipped or
-  failed input that silently improves a score; a caveat that exists in prose but
-  not in the output.
-- One source of truth per rule. If the change introduces a second place a grade,
-  threshold, or status can be computed, the plan says why and how they are
-  pinned together.
+- Watch for the recurring cases: preview or simulated data reaching a live
+  path; a displayed price, odd or reward kept in a second copy instead of the
+  game definition or deployed terms; a failed, replaced or reorganized
+  transaction reported as success; a pending play or unfulfilled request shown
+  as settled; a caveat that exists in prose but not in the output.
+- One source of truth per rule. If the change introduces a second place a
+  price, reserve, balance or outcome can be computed, the plan says why and how
+  they are pinned together.
 - Where a guard is what keeps an output honest, the plan pins it with a test in
-  `implementation/tests/test_integrity_guards.py` or
-  `implementation/service/tests/test_integrity.py`, alongside the existing ones.
+  the matching `tests/*.test.mjs` file or `contracts/test/*.t.sol`, alongside
+  the existing ones.
 
 ## Non-negotiable workflow
 
 1. Always ask the user to identify the source intent file. Do not infer it.
-2. Read the complete intent, `CLAUDE.md`, `documentation/LAS.md` (canon) and
-   `documentation/RECAP.md`.
+2. Read the complete intent, `AGENTS.md`, `README.md` and `API.md`. Read
+   `WORLD_RULES.md`, `SOUND_KIT.md`, `FISHING_GAME_DESIGN.md`,
+   `contracts/AGENTS.md` and `contracts/COMMANDMENTS.md` when the intent
+   touches their areas.
 3. Investigate before planning:
-   - Read related plans and design docs.
-   - Trace the relevant code paths, types, data flow, persistence boundaries,
-     UI states, and integration points.
-   - Locate existing tests, evaluation suites, fixtures, scripts, and
-     analogous implementations.
-   - Inspect relevant recent development when it affects the current state.
+   - Read related intents and plans in `docs/`.
+   - Trace the relevant code paths, types, data flow, contract state, frame
+     boundary, UI states and integration points.
+   - Locate existing tests, fixtures, scripts, and analogous implementations,
+     including `examples/fishing` as the reference game.
+   - Read `.github/workflows/check.yml` to know what the gate runs.
    - Verify every path, symbol, behavior, and command named in the plan.
 4. Always ask focused questions before writing:
    - Resolve ambiguities or contradictions in the intent.
-   - Confirm implementation constraints, compatibility or migration needs,
-     scope boundaries, delivery sequencing, and required proof.
+   - Confirm implementation constraints, compatibility needs (package exports,
+     ABI bindings, deployment manifests), scope boundaries, delivery
+     sequencing, and required proof.
    - Present the proposed test list for explicit confirmation: name each new
-     or changed test file, what it validates about the implementation, what it
-     deliberately does NOT cover (calibration, whether the measurement is
-     valid), and any material cost it adds to the repository gate.
+     or changed test file, what it validates, what it deliberately does NOT
+     cover, and any material cost it adds to the gate. Every planned test costs
+     review and gate time forever; the list is a decision the user confirms,
+     not a detail the plan buries.
    - Present the integrity risks found and the mechanism closing each one, and
      ask the user to confirm none is missing.
    - Propose codebase-supported choices when useful, but ask the user to
      decide; never silently choose.
-   - Confirm the `documentation/plan-<slug>.md` path and whether an existing
-     file may be replaced.
+   - Confirm the `docs/plan-<slug>.md` path and whether an existing file may
+     be replaced.
    - If everything appears settled, summarize the proposed implementation
      direction and ask the user to confirm it.
 5. Wait for the answers. Do not write the plan in the same turn as the
    questions.
-6. Create or revise the confirmed `documentation/plan-<slug>.md`.
+6. Create or revise the confirmed `docs/plan-<slug>.md`.
 7. Audit the finished plan against the intent and repository. Remove guesses,
    stale references, vague tasks, and untestable completion claims.
 
@@ -108,19 +127,22 @@ Implements [<intent name>](<relative path>).
 - Exact behavior, data-model, API, state, and integration changes.
 - Edge cases, failure behavior, compatibility, and migration requirements.
 
-## Integrity risks (§0.5)
+## Integrity risks
 - <Output that could be shown untrue> — <the code that prevents it, and the
   test that pins it.>
 
 ## Verification
 ### Tests
-- Exact test files and cases to add or update, and the command that runs them:
-  `python3 -m unittest discover implementation/tests`,
-  `python3 tests/test_integrity.py` (from `implementation/service/`).
+- Exact test files and cases to add or update, and the commands that run them:
+  `npm test`, `npm run typecheck`, `npm run check:games`,
+  `npm run test:contracts`, `npm run verify:contracts`.
 ### Real-run verification
-- The actual run that proves the change, its vantage point, and the observable
-  outcome that counts as passing. A real output exists only after the run that
-  produced it.
+- The actual run that proves the change and the observable outcome that counts
+  as passing: the local preview served from `examples/fishing/dist`, the
+  optional browser check `scripts/check-fishing-browser.mjs`, the Anvil test,
+  or the local mainnet fork test with `FRIENDSDK_FORK_RPC`. A mainnet
+  deployment or play is only ever run explicitly by the developer, never as
+  part of the plan's automated proof.
 
 ## Delivery order
 1. Dependency-aware sequence with independently verifiable slices.
@@ -136,18 +158,20 @@ Adapt headings to the work; do not add empty boilerplate.
 - Name exact files and symbols where the repository supports that precision.
 - Explain contracts and interactions, not merely “update” or “refactor.”
 - Separate verified current state from proposed changes.
-- Preserve established architecture unless the intent requires changing it.
-- Call out migrations, backward compatibility, cleanup, and rollout when they
-  are genuinely relevant.
-- Include tests for normal behavior, boundaries, regressions, and failures —
-  implementation proof only, never a claim that a measurement is calibrated.
-- Include applicable EXISTING repository test suites and rendered-output
-  inspection as regression gates; do not invent new evaluation suites.
-- Where a run is part of the proof, name its vantage point (residential or
-  cloud, and where) — vantage is part of the measurement, and one results file
-  never mixes two.
-- Plain language (§0.11): say what happens in ordinary words; explain in-house
-  shorthand on first use or drop it.
+- Preserve established architecture unless the intent requires changing it:
+  the frame boundary, the host-owned transport, the reserve accounting, and
+  the immutable contract terms.
+- Call out package export changes, ABI regeneration, deployment manifest
+  schema changes, and cleanup when they are genuinely relevant.
+- Include tests for normal behavior, boundaries, regressions, and failures.
+  Contract tests cover backing, wallet payment, callbacks and exact odds;
+  transport tests cover receipts, replacements and reorgs; keep those
+  properties intact.
+- Include the applicable EXISTING checks as regression gates; do not invent new
+  evaluation suites. Note when a check needs Foundry installed.
+- Plain language: say what happens in ordinary words; explain repository
+  shorthand (RF base units, free stake, canonical NFT wallet, batch ID, Dice
+  sponsor) on first use or drop it.
 - Make phases coherent implementation slices, not arbitrary file groupings.
 - Do not hide unresolved decisions in implementation language. Ask first; if
   the user explicitly defers one, mark it as a blocker or named open decision.

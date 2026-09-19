@@ -1,6 +1,6 @@
 ---
 name: create-intent
-description: Creates or revises documentation/intent-<slug>.md from raw product or implementation ideas. Use only when the user explicitly invokes /create-intent.
+description: Creates or revises docs/intent-<slug>.md from raw game, SDK, tooling or contract ideas for FriendSDK. Use only when the user explicitly invokes /create-intent.
 disable-model-invocation: true
 ---
 
@@ -9,61 +9,69 @@ disable-model-invocation: true
 Turn rough ideas into a short, human-readable intent that can be discussed and
 revised before implementation planning.
 
-## Implementation, not measurement validation
+## Repository context
 
-An intent describes a FEATURE to build. It is not a validation brief for that
-feature. Validating a measurement — calibrating thresholds, checking an
-indicator against real subjects, judging whether a score tracks the construct
-it claims to — is a research effort in its own right, performed later under its
-own intent. Indicators and thresholds are frozen before a validation run
-(`CLAUDE.md`, run discipline); an intent that quietly changes one invalidates
-the runs that used it.
+FriendSDK is an isolated prototype kit for small RF chance games played with a
+hardwired Generations NFT on Robinhood mainnet. Read these before anything else:
 
-- Do not fold calibration targets, threshold changes, or validation-run
-  outcomes into a feature intent. If the raw idea contains them, name them
-  plainly as later validation work and keep them out of the feature's success
-  criteria.
-- Never propose new calibration runs, validation studies, or agreement
-  experiments. Only the user can put those in scope, by asking for them
-  specifically.
+- `AGENTS.md` — the non-negotiable game, boundary and safety rules.
+- `README.md` — what the SDK contains, the v1 rules, the backing formula and
+  the build/deploy/play flow.
+- `API.md` — the exported modules, the host transport and the hosting boundary.
+- `WORLD_RULES.md`, `SOUND_KIT.md`, `FISHING_GAME_DESIGN.md` — when the idea
+  touches scenes, Friend sprites, audio or the fishing reference.
+- `contracts/AGENTS.md` and `contracts/COMMANDMENTS.md` — when the idea
+  touches Solidity, deployment tooling or the Dice flow.
+- `games/README.md` — when the idea is a new game submission.
 
-## Output integrity — before writing anything (§0.5)
+An intent must respect the rules already fixed by those documents. If the raw
+idea conflicts with one (a second currency, an expiry window, UI outside the
+960 × 640 container, a game requesting a signer, a rerollable result, a mutable
+contract term), say so in chat and ask the user to resolve it; do not write the
+conflict into the intent as if it were agreed.
 
-The intent must name every way the proposed feature could show a reader
-something untrue: illustrative or sample data that could render as a real
-result, a number displayed that is not the number computed, a skipped or failed
-input that silently improves a score, a caveat that lives in prose but not in
-the output.
+## Player-facing integrity — before writing anything
 
-- State those risks explicitly, in the intent and in chat. A risk nobody named
-  is a risk nobody looked for.
-- Say what the feature does NOT measure. "Not measured" is a state to surface,
-  never a zero and never an omission.
-- Success criteria must be honest about the evidence: no grade a partial run
-  cannot support, no precision the measurement does not have.
+Contracts decide paid outcomes. Animation, browser randomness, preview ledgers
+and UI copy are presentation only. The intent must name every way the proposed
+change could show a player something untrue:
+
+- preview or simulated state that could be read as a live result or balance;
+- a transaction, purchase or payout claimed before a confirmed receipt;
+- odds, prices or rewards displayed from a second source instead of the game
+  definition and deployed terms;
+- a pending, failed or skipped step that silently improves what the player sees;
+- a caveat that lives in prose or docs but not in the actual output.
+
+State those risks explicitly, in the intent and in chat. Success criteria must
+be honest about the evidence: a local preview or a passing unit test is not a
+live deployment, and a deployment is not unattended operation.
 
 ## Non-negotiable workflow
 
 1. Inspect before asking:
-   - Read `CLAUDE.md`, `documentation/LAS.md` (canon: goal, methodology,
-     indicator registry) and `documentation/RECAP.md`.
-   - Read any existing intent for this work in `documentation/`.
-   - Search relevant docs, code, tests, and recent development for the ideas
-     the user supplied. Exhaust the source data before reasoning about what is
-     missing (§0.7); if anything within reach is left unread, say so.
+   - Read the repository context above.
+   - Read any existing intent for this work in `docs/`.
+   - Search the relevant code in `src/`, `examples/`, `games/`, `scripts/`,
+     `contracts/src` and the tests in `tests/` and `contracts/test` for the
+     ideas the user supplied. Exhaust what is within reach before reasoning
+     about what is missing; if anything relevant is left unread, say so.
    - Distinguish verified current behavior from proposals.
 2. Always ask the user focused questions before writing or editing the file.
    Never fill a gap with a guess.
-   - Clarify the problem, desired outcome, user-visible behavior, scope,
+   - Clarify the problem, desired outcome, player-visible behavior, scope,
      non-goals, constraints, and what success looks like.
-   - Surface conflicts between the request and the repository.
+   - Establish which layer the change belongs to: game content, SDK module,
+     host transport or bridge, deployment tooling, or contract. Contract
+     changes mean a new deployment and new immutable terms; name that.
+   - Surface conflicts between the request and the repository rules.
    - If the input appears complete, summarize the intended interpretation and
      ask the user to confirm it.
-   - Confirm the `documentation/intent-<slug>.md` path and whether an existing
-     file may be replaced.
+   - Confirm the `docs/intent-<slug>.md` path and whether an existing file may
+     be replaced.
 3. Wait for the answers. Do not write the intent in the same turn as the
    questions.
-4. Create or revise the confirmed `documentation/intent-<slug>.md`.
+4. Create or revise the confirmed `docs/intent-<slug>.md`.
 5. Re-read the result and remove assumptions, implementation-plan detail,
    repetition, and unsupported claims.
 
@@ -87,8 +95,9 @@ implementation.
   defer them.
 - Prefer prose and short bullets. Use the shortest document that preserves the
   agreed meaning.
-- Plain language (§0.11): describe what happens in ordinary words. In-house
-  shorthand — pillar letters, variant codes, rung names — gets explained on
+- Plain language: describe what happens in ordinary words. Repository
+  shorthand — RF base units, basis-point weights, free stake, canonical NFT
+  wallet, hardwired Generations NFT, batch ID, Dice sponsor — gets explained on
   first use or dropped. A competent reader who has not been in the room must be
   able to follow every sentence.
 
