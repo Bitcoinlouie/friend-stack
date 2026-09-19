@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { HttpRequestError } from 'viem';
 import { bindGameFrame, createFrameGameClient } from '../dist/frame-bridge.js';
 import { createGamePreview, RF } from '../dist/game.js';
 
@@ -69,4 +70,73 @@ test('arbitrary transactions and caller-selected Friend IDs are not bridge metho
     }
     assert.equal((await session.preview.client.read()).friendId, 5n);
   } finally { session.close(); }
+});
+
+test('live actions return their confirmed result without waiting for another state read', async () => {
+  const { port1, port2 } = new MessageChannel();
+  let reads = 0;
+  const snapshots = [], approvals = [];
+  const preview = createGamePreview(definition, { stake: 10n * RF, rfBalance: 20n * RF, friendId: 5n, draw: () => 0 });
+  const client = { ...preview.client, mode: 'chain', async read() {
+    reads++;
+    throw new Error('State refresh unavailable');
+  } };
+  const host = bindGameFrame(port1, { client, authorize: async method => { approvals.push(method); }, onSnapshot: value => snapshots.push(value) });
+  const frame = createFrameGameClient(port2, definition, undefined, 'chain');
+  try {
+    await frame.client.buy(1n);
+    const [play] = await frame.client.play();
+    assert.equal((await frame.client.settle(play.id)).outcomeId, 1);
+    await frame.client.redeem(1, 1n);
+    assert.equal(reads, 0, 'Receipt-confirmed actions must not trigger a redundant RPC refresh');
+    assert.deepEqual(approvals, ['buy', 'play', 'settle', 'redeem']);
+    assert.deepEqual(snapshots, []);
+    await assert.rejects(frame.client.read(), /Could not read game state/);
+    assert.equal(reads, 1);
+  } finally { host.close(); frame.close(); }
+});
+
+
+test('private RPC and wallet diagnostics stay in the trusted host, never in the game response', async () => {
+  const secret = 'AUDIT_PRIVATE_API_KEY', privateBody = 'AUDIT_PRIVATE_REQUEST_BODY';
+  const errors = [
+    new HttpRequestError({ url: `https://rpc.example.invalid/v1/${secret}`, body: { privateBody }, details: 'Fixture failure' }),
+    new Error(`Wallet diagnostic: ${secret}; private request ${privateBody}`),
+  ];
+  for (const error of errors) {
+    const { port1, port2 } = new MessageChannel(); const received = [];
+    const client = { definition, mode: 'chain', read: async () => { throw error; }, buy: async () => { throw error; } };
+    const host = bindGameFrame(port1, { client, authorize: async () => {}, onError: cause => received.push(cause) });
+    const frame = createFrameGameClient(port2, definition);
+    try {
+      await assert.rejects(frame.client.read(), cause => {
+        assert.equal(cause.message, 'Could not read game state. Retry the read.');
+        assert(!cause.message.includes(secret)); assert(!cause.message.includes(privateBody)); return true;
+      });
+      await assert.rejects(frame.client.buy(1n), cause => {
+        assert.match(cause.message, /Check your wallet and transaction status/);
+        assert(!cause.message.includes(secret)); assert(!cause.message.includes(privateBody)); return true;
+      });
+      assert.deepEqual(received, [error, error], 'Original diagnostics remain available only to the trusted host');
+    } finally { host.close(); frame.close(); }
+  }
+});
+
+test('transaction recovery preserves only validated status and hash, never raw provider messages', async () => {
+  const hash = `0x${'ab'.repeat(32)}`, secret = 'PRIVATE_PROVIDER_DIAGNOSTIC';
+  for (const [code, transactionHash] of [['unconfirmed', hash], ['unverified', hash], ['replaced', hash], ['reorg', hash], ['reverted', hash], ['unconfirmed', secret], ['constructor', hash]]) {
+    const { port1, port2 } = new MessageChannel();
+    const error = Object.assign(new Error(secret), { name: 'ChanceTransactionError', code, transactionHash });
+    const client = { definition, mode: 'chain', buy: async () => { throw error; } };
+    const host = bindGameFrame(port1, { client, authorize: async () => {} });
+    const frame = createFrameGameClient(port2, definition);
+    try {
+      await assert.rejects(frame.client.buy(1n), cause => {
+        assert(!cause.message.includes(secret));
+        if (transactionHash === hash && code !== 'constructor') { assert(cause.message.includes(hash)); assert.match(cause.message, /Inspect the transaction in your wallet before retrying/); }
+        else assert.match(cause.message, /Game action failed/);
+        return true;
+      });
+    } finally { host.close(); frame.close(); }
+  }
 });

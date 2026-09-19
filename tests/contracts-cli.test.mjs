@@ -11,7 +11,6 @@ import { constructorArgs, preflight, deployGame, fundDeployment } from '../scrip
 import { resolvePlay } from '../scripts/contracts/resolve.mjs';
 
 const ACCOUNT = '0x0000000000000000000000000000000000000011';
-const FRIEND = '0x0000000000000000000000000000000000000022';
 const GAME = '0x0000000000000000000000000000000000000033';
 const CONSUMABLE = '0x0000000000000000000000000000000000000044';
 const DEPLOY_HASH = `0x${'1'.repeat(64)}`;
@@ -30,7 +29,7 @@ const gameAbi = parseAbi([
 
 function manifest() {
   return { chainId: MAINNET.chainId, rf: MAINNET.rf, generations: MAINNET.generations, entropy: MAINNET.entropy,
-    provider: MAINNET.provider, deployer: ACCOUNT, game: GAME, initialStake: '10', friendId: '7', friendWallet: FRIEND,
+    provider: MAINNET.provider, deployer: ACCOUNT, game: GAME, initialStake: '10',
     definition: JSON.parse(JSON.stringify(definition, (_, value) => typeof value === 'bigint' ? value.toString() : value)),
     status: 'deployed', transactions: [{ step: 'deploy', hash: DEPLOY_HASH, status: 'confirmed' }] };
 }
@@ -43,17 +42,17 @@ function confirmed(hash = DEPLOY_HASH, extra = {}) {
 function fixture(options = {}) {
   let allowance = options.allowance ?? 0n, requested = options.requested ?? false;
   let fulfilled = options.fulfilled ?? false, outcome = options.outcome ?? 0n;
-  const writes = [], receipts = new Map([[DEPLOY_HASH, confirmed()]]);
+  const writes = [], reads = [], receipts = new Map([[DEPLOY_HASH, confirmed()]]);
   const client = {
     getChainId: async () => options.chainId ?? MAINNET.chainId,
     getBlockNumber: async () => 3n, getBlock: async () => ({ hash: BLOCK_HASH }),
-    getCode: async () => '0x1234', getBalance: async () => 1n,
-    async readContract({ address, functionName, args }) {
+    getCode: async ({ address }) => address === options.emptyCodeAt ? '0x' : '0x1234', getBalance: async () => options.eth ?? 1n,
+    async readContract({ address, functionName, args, blockNumber }) {
+      reads.push({ address, functionName, args, blockNumber });
       if (Object.hasOwn(MAINNET, functionName)) return MAINNET[functionName];
-      const fixed = { ownerOf: ACCOUNT, generation: 1, tokenBoundAccount: FRIEND, owner: ACCOUNT,
-        decimals: 18, team: ACCOUNT, price: 1n, maxPrize: 10n, consumable: CONSUMABLE,
+      const fixed = { decimals: 18, team: ACCOUNT, price: 1n, maxPrize: 10n, consumable: CONSUMABLE,
         getFeeV2: 5n, balanceOf: 100n };
-      if (functionName === 'token') return address === MAINNET.generations ? MAINNET.rf : [BigInt(MAINNET.chainId), MAINNET.generations, 7n];
+      if (functionName === 'token' && address === MAINNET.generations) return options.token ?? MAINNET.rf;
       if (functionName === 'allowance') return allowance;
       if (functionName === 'plays') return [7n, args[0] === 9n ? 0n : 1n, outcome];
       if (functionName === 'randomness') return [requested ? 1n : 0n, requested, fulfilled, zeroHash];
@@ -82,7 +81,7 @@ function fixture(options = {}) {
       return hash;
     },
   };
-  return { client, wallet, account: { address: ACCOUNT }, abi: gameAbi, manifest: manifest(), writes, receipts, save: async () => {} };
+  return { client, wallet, account: { address: ACCOUNT }, abi: gameAbi, manifest: manifest(), writes, reads, receipts, save: async () => {} };
 }
 
 test('hidden key input never echoes, restores terminal mode, and rejects non-TTY input', async () => {
@@ -117,13 +116,22 @@ test('constructor encodes only existing dependencies and JSON outcome metadata',
   assert.equal(metadata.name, 'Fish'); assert.ok(!('image' in metadata));
 });
 
-test('deployment preflight rejects the wrong chain, NFT owner, RF stake and wallet binding', async () => {
-  assert.equal((await preflight(fixture().client, ACCOUNT, 7n, 10n)).friendWallet, FRIEND);
-  await assert.rejects(preflight(fixture({ chainId: 1 }).client, ACCOUNT, 7n, 10n), /chain 4663/);
-  await assert.rejects(preflight(fixture({ ownerOf: FRIEND }).client, ACCOUNT, 7n, 10n), /must own/);
-  await assert.rejects(preflight(fixture({ generation: 0 }).client, ACCOUNT, 7n, 10n), /hardwired/);
-  await assert.rejects(preflight(fixture({ balanceOf: 1n }).client, ACCOUNT, 7n, 10n), /initial game stake/);
-  await assert.rejects(preflight(fixture().client, ACCOUNT, 8n, 10n), /NFT binding/);
+test('deployment preflight needs funding and dependencies but no NFT ownership or canonical wallet', async () => {
+  const f = fixture();
+  // This fixture has no NFT ownership or wallet methods; any such read throws.
+  assert.deepEqual(await preflight(f.client, ACCOUNT, 10n), { balance: 100n, eth: 1n, fee: 5n });
+  assert.deepEqual(f.reads.filter(read => read.address === MAINNET.generations).map(read => read.functionName), ['token']);
+  assert.deepEqual(f.reads.filter(read => read.functionName === 'balanceOf').map(read => read.args), [[ACCOUNT]]);
+  assert(f.reads.every(read => read.blockNumber === 3n), 'Read dependencies and funding at one observed block');
+  assert.equal(f.writes.length, 0);
+  await assert.rejects(preflight(fixture({ chainId: 1 }).client, ACCOUNT, 10n), /chain 4663/);
+  await assert.rejects(preflight(fixture({ balanceOf: 1n }).client, ACCOUNT, 10n), /initial game stake/);
+  await assert.rejects(preflight(fixture({ eth: 0n }).client, ACCOUNT, 10n), /needs ETH/);
+  await assert.rejects(preflight(fixture({ decimals: 6 }).client, ACCOUNT, 10n), /18-decimal RF/);
+  await assert.rejects(preflight(fixture({ token: GAME }).client, ACCOUNT, 10n), /18-decimal RF/);
+  for (const emptyCodeAt of [MAINNET.generations, MAINNET.rf, MAINNET.entropy]) {
+    await assert.rejects(preflight(fixture({ emptyCodeAt }).client, ACCOUNT, 10n), /no code/);
+  }
 });
 
 test('receipts reject failures, replacements, wrong chains and reorganizations', async () => {
@@ -138,10 +146,14 @@ test('confirmed deployment is saved independently of funding without serializing
   const f = fixture(), saved = [];
   f.wallet.deployContract = async () => DEPLOY_HASH;
   const result = await deployGame({ ...f, account: { address: ACCOUNT, privateKey: 'never serialize' }, definition,
-    built: { abi: gameAbi, bytecode: { object: '0x1234' } }, friend: { friendId: 7n, friendWallet: FRIEND }, initialStake: 10n,
+    built: { abi: gameAbi, bytecode: { object: '0x1234' } }, initialStake: 10n,
     save: async value => saved.push(JSON.parse(JSON.stringify(value))) });
   assert.equal(saved[0].status, 'deploying'); assert.equal(saved[0].transactions[0].hash, DEPLOY_HASH);
   assert.equal(result.game, GAME); assert.equal(result.status, 'deployed');
+  for (const value of [...saved, result]) {
+    assert.equal(Object.hasOwn(value, 'friendId'), false);
+    assert.equal(Object.hasOwn(value, 'friendWallet'), false);
+  }
   assert.ok(!JSON.stringify(saved).includes('never serialize')); assert.equal(f.writes.length, 0);
 });
 

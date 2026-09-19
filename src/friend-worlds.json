@@ -2,9 +2,9 @@
   "version": 1,
   "collection": "Rare Friends / Isometric Worlds",
   "source": {
-    "livingMap": "../hardware-hero-2026-09-09/living-pickup-loop-2026-09-10/source/living-map-source.js",
-    "projection": "../hardware-hero-2026-09-09/living-pickup-loop-2026-09-10/source/projection.json",
-    "characterRule": "Use only the eight canonical source sprites. Keep integer pixel edges and source white outline."
+    "livingMap": "src/friend-world.ts",
+    "projection": "src/friend-worlds.json#style.projection",
+    "characterRule": "Use canonical on-chain Generations sprites through the SDK sprite reader. Preserve integer pixel edges and the white outline."
   },
   "style": {
     "projection": {

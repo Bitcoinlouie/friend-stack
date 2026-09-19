@@ -2,7 +2,7 @@
 
 Use the shared kit for choices, purchases, activities, reveals, and rewards. The fishing reference demonstrates its use.
 
-The palette comes from the September 17 Stats and September 15 Token trailers: rounded sine/triangle plucks, warm low notes, soft ticks, and ascending three-note pickups. These are new short arrangements synthesized from code, with no recordings or external samples. `assets/sound-provenance.json` records the source references and what was adapted.
+The palette uses rounded sine/triangle plucks, warm low notes, soft ticks and ascending three-note pickups. All cues are synthesized from code, with no recordings or external samples. Source attribution is recorded in `assets/sound-provenance.json`.
 
 ## Use the module
 

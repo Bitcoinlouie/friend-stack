@@ -6,14 +6,14 @@ export type ChanceOutcome = Readonly<{ name: string; chanceBps: number; reward: 
 export type ChanceGameDefinition = Readonly<{ name: string; consumable: string; price: bigint; outcomes: readonly ChanceOutcome[] }>;
 export type GamePlay = Readonly<{ id: bigint; outcomeId: number | null }>;
 export type GameSnapshot = Readonly<{
-  mode: 'preview'; friendId: bigint; rfBalance: bigint; consumables: bigint;
+  mode: 'preview' | 'chain'; friendId: bigint; rfBalance: bigint; consumables: bigint;
   stake: bigint; freeStake: bigint; reservedPlays: bigint; rewardLiability: bigint;
   inventory: readonly bigint[]; plays: readonly GamePlay[];
 }>;
 
 /** Player actions; randomness and funding are provided separately by the platform. */
-export type PreviewGameClient = Readonly<{
-  mode: 'preview'; definition: ChanceGameDefinition;
+export type GameClient = Readonly<{
+  mode: 'preview' | 'chain'; definition: ChanceGameDefinition;
   read(): Promise<GameSnapshot>;
   canBuy(quantity: bigint): Promise<boolean>;
   buy(quantity: bigint): Promise<void>;
@@ -21,6 +21,8 @@ export type PreviewGameClient = Readonly<{
   settle(playId: bigint): Promise<GamePlay>;
   redeem(outcomeId: number, quantity: bigint): Promise<void>;
 }>;
+
+export type PreviewGameClient = GameClient & Readonly<{ mode: 'preview' }>;
 
 function uint(value: bigint, name: string, positive = false): bigint {
   if (typeof value !== 'bigint' || value < (positive ? 1n : 0n) || value > UINT256_MAX) throw new RangeError(`Invalid ${name}.`);

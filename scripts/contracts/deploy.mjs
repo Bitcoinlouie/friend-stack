@@ -2,9 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { readFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { encodeDeployData, formatEther, formatUnits, isAddress, parseEventLogs, parseUnits, zeroAddress } from 'viem';
+import { encodeDeployData, formatEther, formatUnits, parseEventLogs, parseUnits } from 'viem';
 import { maximumPrize, parseChanceGame } from '../../dist/game.js';
-import { ROOT, MAINNET, ERC20_ABI, GENERATIONS_ABI, WALLET_ABI, ENTROPY_ABI, equal,
+import { ROOT, MAINNET, ERC20_ABI, GENERATIONS_ABI, ENTROPY_ABI, equal,
   uint, ask, signingClients, checkNetwork, receipt, saveManifest, loadManifest, artifact,
   verifyGame, sendContract, validateArgs, reportError } from './common.mjs';
 
@@ -16,40 +16,30 @@ export function constructorArgs(definition) {
         description: `${outcome.chanceBps}/10000 chance; ${formatUnits(outcome.reward, 18)} RF redemption.` })).toString('base64')}` }))];
 }
 
-export async function preflight(client, account, friendId, initialStake) {
+export async function preflight(client, account, initialStake) {
   await checkNetwork(client);
   const blockNumber = await client.getBlockNumber();
   const read = (address, abi, functionName, args = []) => client.readContract({ address, abi, functionName, args, blockNumber });
   const codes = await Promise.all([MAINNET.generations, MAINNET.rf, MAINNET.entropy].map(address => client.getCode({ address, blockNumber })));
   if (codes.some(code => !code || code === '0x')) throw new Error('An existing Generations, RF, or Dice contract has no code on the selected chain.');
-  const [owner, generation, friendWallet, rf, balance, decimals, eth, fee] = await Promise.all([
-    read(MAINNET.generations, GENERATIONS_ABI, 'ownerOf', [friendId]),
-    read(MAINNET.generations, GENERATIONS_ABI, 'generation', [friendId]),
-    read(MAINNET.generations, GENERATIONS_ABI, 'tokenBoundAccount', [friendId]),
+  const [rf, balance, decimals, eth, fee] = await Promise.all([
     read(MAINNET.generations, GENERATIONS_ABI, 'token'),
     read(MAINNET.rf, ERC20_ABI, 'balanceOf', [account]),
     read(MAINNET.rf, ERC20_ABI, 'decimals'), client.getBalance({ address: account, blockNumber }),
     read(MAINNET.entropy, ENTROPY_ABI, 'getFeeV2', [MAINNET.provider, 200_000]),
   ]);
-  if (!equal(owner, account) || generation < 1) throw new Error('The signing account must own the selected hardwired Generations NFT (generation >= 1).');
   if (!equal(rf, MAINNET.rf) || decimals !== 18) throw new Error('Generations RF token does not match the pinned 18-decimal RF deployment.');
-  if (!isAddress(friendWallet) || equal(friendWallet, zeroAddress)) throw new Error('Generations returned an invalid canonical Friend wallet.');
   if (balance < initialStake) throw new Error('The deployer RF balance does not cover the initial game stake.');
   if (eth === 0n) throw new Error('The deployer needs ETH for mainnet transactions.');
-  const [walletOwner, binding, friendRF] = await Promise.all([
-    read(friendWallet, WALLET_ABI, 'owner'), read(friendWallet, WALLET_ABI, 'token'),
-    read(MAINNET.rf, ERC20_ABI, 'balanceOf', [friendWallet]),
-  ]);
-  if (!equal(walletOwner, account) || binding[0] !== BigInt(MAINNET.chainId) || !equal(binding[1], MAINNET.generations) || binding[2] !== friendId) throw new Error('Canonical Friend wallet has an unexpected owner or NFT binding.');
-  return { friendId, friendWallet, friendRF, balance, eth, fee };
+  return { balance, eth, fee };
 }
 
 /** Exported for integration tests; signers and clients are passed in, never serialized. */
-export async function deployGame({ client, wallet, account, definition, built, friend, initialStake, save }) {
+export async function deployGame({ client, wallet, account, definition, built, initialStake, save }) {
   await checkNetwork(client);
   const manifest = { schemaVersion: 1, chainId: MAINNET.chainId, rf: MAINNET.rf,
     generations: MAINNET.generations, entropy: MAINNET.entropy, provider: MAINNET.provider,
-    deployer: account.address, friendId: friend.friendId.toString(), friendWallet: friend.friendWallet,
+    deployer: account.address,
     initialStake: initialStake.toString(), definition: JSON.parse(JSON.stringify(definition, (_, value) => typeof value === 'bigint' ? value.toString() : value)),
     status: 'deploying', transactions: [] };
   const hash = await wallet.deployContract({ account, chain: wallet.chain, abi: built.abi,
@@ -119,7 +109,6 @@ async function main(args) {
   const built = await artifact();
   let manifest = resume ? await loadManifest(resolve(args[1])) : undefined;
   const definition = parseChanceGame(manifest?.definition ?? JSON.parse(await readFile(resolve(args[0] ?? resolve(ROOT, 'examples/fishing/game.json')), 'utf8')));
-  const friendId = manifest ? uint(manifest.friendId, 'Friend ID') : uint(await ask('Your hardwired Generations NFT token ID: '), 'Friend ID');
   const maximum = maximumPrize(definition);
   let initialStake;
   if (manifest) initialStake = uint(manifest.initialStake, 'Initial stake');
@@ -130,18 +119,18 @@ async function main(args) {
   }
   if (initialStake < maximum) throw new Error('Initial stake must cover the highest prize.');
   const { account, client, wallet } = await signingClients();
-  let friend;
-  if (!resume) friend = await preflight(client, account.address, friendId, initialStake);
+  let funding;
+  if (!resume) funding = await preflight(client, account.address, initialStake);
   else if (!equal(account.address, manifest.deployer)) throw new Error('Resume with the original deployer account.');
   console.log(`Network: Robinhood mainnet (${MAINNET.chainId})\nSigner/team: ${account.address}\nGenerations: ${MAINNET.generations}\nRF: ${MAINNET.rf}\nDice: ${MAINNET.entropy}\nProvider: ${MAINNET.provider}`);
   console.log(`Game: ${definition.name}\nConsumable: ${definition.consumable}\nPrice: ${formatUnits(definition.price, 18)} RF\nInitial stake: ${formatUnits(initialStake, 18)} RF\nHighest prize: ${formatUnits(maximum, 18)} RF`);
   for (const outcome of definition.outcomes) console.log(`  ${outcome.name}: ${outcome.chanceBps}/10000; ${formatUnits(outcome.reward, 18)} RF`);
-  if (friend) {
-    console.log(`Canonical Friend wallet: ${friend.friendWallet}\nFriend wallet RF: ${formatUnits(friend.friendRF, 18)} (used for game purchases)\nDice fee now: ${formatEther(friend.fee)} ETH per batch`);
+  if (funding) {
+    console.log(`Deployer RF: ${formatUnits(funding.balance, 18)}\nDice fee now: ${formatEther(funding.fee)} ETH per batch`);
     const data = encodeDeployData({ abi: built.abi, bytecode: built.bytecode.object, args: constructorArgs(definition) });
     const [gas, gasPrice] = await Promise.all([client.estimateGas({ account, data }), client.getGasPrice()]);
     console.log(`Deployment estimate: ${gas} gas; ${formatEther(gas * gasPrice)} ETH at current gas price. RF approval and funding also cost gas.`);
-    if (friend.eth < gas * gasPrice) throw new Error('ETH balance does not cover the deployment gas estimate.');
+    if (funding.eth < gas * gasPrice) throw new Error('ETH balance does not cover the deployment gas estimate.');
   } else console.log(`Resume existing deployment: ${manifest.game ?? manifest.transactions[0]?.hash}`);
   if (await ask('Type DEPLOY to send these mainnet transactions: ') !== 'DEPLOY') throw new Error('Cancelled before broadcasting.');
   let manifestPath = resume ? resolve(args[1]) : undefined;
@@ -153,7 +142,7 @@ async function main(args) {
     console.log(`Manifest: ${manifestPath}`);
   };
   try {
-    if (!manifest) manifest = await deployGame({ client, wallet, account, definition, built, friend, initialStake, save });
+    if (!manifest) manifest = await deployGame({ client, wallet, account, definition, built, initialStake, save });
     if (!manifest.game) {
       const confirmed = await receipt(client, manifest.transactions[0].hash);
       if (!confirmed.contractAddress) throw new Error('Deployment receipt has no contract address.');
@@ -162,7 +151,7 @@ async function main(args) {
     }
     await fundDeployment({ client, wallet, account, abi: built.abi, manifest, save });
     console.log(`Confirmed game: ${manifest.game}\nConfirmed consumable: ${manifest.consumable}\nManifest: ${manifestPath}`);
-    console.log('Use this manifest with the isolated SDK host. After play, run resolve:contracts with the manifest and play ID.');
+    console.log('Start the game with friendsdk dev <game-directory> --deployment <manifest>. The browser handles purchases, casts, and settlement through your wallet. resolve:contracts remains available for pending play recovery.');
   } catch (error) {
     if (manifestPath) console.error(`Inspect the recorded transactions before retrying. Resume: npm run deploy:contracts -- --resume ${manifestPath}`);
     throw error;

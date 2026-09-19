@@ -5,8 +5,8 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import test from 'node:test';
-import { createPublicClient, createWalletClient, defineChain, encodeAbiParameters, encodeFunctionData, http, keccak256, parseAbi, toHex } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+import { createPublicClient, createWalletClient, defineChain, encodeAbiParameters, encodeFunctionData, http, keccak256, parseAbi, toHex, zeroAddress } from 'viem';
+import { mnemonicToAccount } from 'viem/accounts';
 import { createChanceGameTransport } from '../dist/chain.js';
 import { parseChanceGame } from '../dist/game.js';
 import { CHAIN, MAINNET, ROOT, equal } from '../scripts/contracts/common.mjs';
@@ -14,9 +14,8 @@ import { deployGame, fundDeployment, preflight } from '../scripts/contracts/depl
 import { resolvePlay } from '../scripts/contracts/resolve.mjs';
 import { playOnce } from '../scripts/contracts/play.mjs';
 
-// Public Anvil fixture key; never a real wallet. Every RPC in this test is loopback.
-const LOCAL_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
-const SECOND_LOCAL_KEY = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d';
+// Public Anvil fixture mnemonic; never a real wallet. Every RPC in this test is loopback.
+const LOCAL_TEST_MNEMONIC = 'test '.repeat(11) + 'junk';
 const RF = 10n ** 18n;
 const MOCK_PATH = resolve(ROOT, 'contracts/out/ChanceGame.t.sol');
 const GAME_PATH = resolve(ROOT, 'contracts/out/ChanceGame.sol/ChanceGame.json');
@@ -43,7 +42,7 @@ function legendWord(game, batchId, playId) {
   return toHex(word, { size: 32 });
 }
 
-test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and redemption', {
+test('local Anvil: deploy/resume without an NFT, then canonical wallet play, Dice resume and redemption', {
   skip: !hasAnvil ? 'Install Foundry/Anvil to run local contract integration.'
     : !hasArtifacts ? 'Run npm run build:contracts to compile local contract fixtures.' : false,
   timeout: 60_000,
@@ -54,8 +53,8 @@ test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and
   const node = spawn('anvil', ['--host', '127.0.0.1', '--port', String(port), '--chain-id', String(MAINNET.chainId), '--silent'], { stdio: 'ignore' });
   let processError;
   node.on('error', error => { processError = error; });
-  const account = privateKeyToAccount(LOCAL_KEY);
-  const secondAccount = privateKeyToAccount(SECOND_LOCAL_KEY);
+  const account = mnemonicToAccount(LOCAL_TEST_MNEMONIC);
+  const secondAccount = mnemonicToAccount(LOCAL_TEST_MNEMONIC, { addressIndex: 1 });
   const transport = http(rpc, { retryCount: 0, timeout: 1000 });
   const client = createPublicClient({ chain, transport, pollingInterval: 10, cacheTime: 0 });
   const wallet = createWalletClient({ account, chain, transport, cacheTime: 0 });
@@ -90,17 +89,14 @@ test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and
       const runtime = await client.getCode({ address: receipt.contractAddress });
       await client.request({ method: 'anvil_setCode', params: [address, runtime] });
     }
-    await write(MAINNET.generations, generationsMock.abi, 'mint', [account.address, 1n, 1]);
     await write(MAINNET.rf, rfMock.abi, 'mint', [account.address, 100n * RF]);
-    const friendWallet = await read(MAINNET.generations, generationsMock.abi, 'tokenBoundAccount', [1n]);
-    await write(MAINNET.rf, rfMock.abi, 'mint', [friendWallet, 3n * RF]);
-
-    const friend = await preflight(client, account.address, 1n, 10n * RF);
-    assert.ok(equal(friend.friendWallet, friendWallet));
-    assert.equal(friend.friendRF, 3n * RF);
+    // No NFT exists yet: deployment and its prize funding are independent of play eligibility.
+    assert.equal(await read(MAINNET.generations, generationsMock.abi, 'ownerOf', [1n]), zeroAddress);
+    const funding = await preflight(client, account.address, 10n * RF);
+    assert.equal(funding.balance, 100n * RF);
     const saves = [];
     const save = async manifest => { saves.push(structuredClone(manifest)); };
-    const manifest = await deployGame({ client, wallet, account, definition, built, friend, initialStake: 10n * RF, save });
+    const manifest = await deployGame({ client, wallet, account, definition, built, initialStake: 10n * RF, save });
     assert.equal(manifest.status, 'deployed');
     assert.equal(saves[0].transactions[0].status, 'submitted');
     await fundDeployment({ client, wallet, account, abi: built.abi, manifest, save });
@@ -110,6 +106,11 @@ test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and
     ]);
     assert.equal(await read(MAINNET.rf, rfMock.abi, 'balanceOf', [account.address]), 90n * RF);
     assert.equal(await read(MAINNET.rf, rfMock.abi, 'balanceOf', [manifest.game]), 10n * RF);
+    assert.equal(await read(MAINNET.generations, generationsMock.abi, 'ownerOf', [1n]), zeroAddress);
+    for (const value of [...saves, manifest]) {
+      assert.equal(Object.hasOwn(value, 'friendId'), false);
+      assert.equal(Object.hasOwn(value, 'friendWallet'), false);
+    }
 
     // Resume after a submitted funding hash was saved but confirmation was interrupted.
     manifest.transactions.find(tx => tx.step === 'fund').status = 'submitted';
@@ -119,6 +120,12 @@ test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and
     assert.equal(await client.getTransactionCount({ address: account.address }), nonceBeforeResume);
     assert.equal(manifest.transactions.filter(tx => tx.step === 'fund').length, 1);
     assert.equal(await read(MAINNET.rf, rfMock.abi, 'balanceOf', [manifest.game]), 10n * RF);
+    assert.equal(await read(MAINNET.generations, generationsMock.abi, 'ownerOf', [1n]), zeroAddress);
+
+    // Owned hardwired identity remains mandatory for the separate player phase.
+    await write(MAINNET.generations, generationsMock.abi, 'mint', [account.address, 1n, 1]);
+    const friendWallet = await read(MAINNET.generations, generationsMock.abi, 'tokenBoundAccount', [1n]);
+    await write(MAINNET.rf, rfMock.abi, 'mint', [friendWallet, 3n * RF]);
 
     const deployment = { chainId: MAINNET.chainId, game: manifest.game, generations: MAINNET.generations, rf: MAINNET.rf };
     const host = createChanceGameTransport({ deployment, account: account.address, publicClient: client, walletClient: wallet });
@@ -153,7 +160,7 @@ test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and
     assert.equal(pending.pending, true);
     assert.equal(oracleTransactions.length, 1);
     const oraclePaid = await client.getBalance({ address: MAINNET.entropy });
-    assert.equal(oraclePaid, friend.fee);
+    assert.equal(oraclePaid, funding.fee);
     const repeatedPending = await resolvePlay(resolution);
     assert.equal(repeatedPending.sequenceNumber, pending.sequenceNumber);
     assert.equal(oracleTransactions.length, 1);
@@ -176,7 +183,7 @@ test('local Anvil: deploy/resume, canonical wallet SDK receipts, Dice resume and
     // The inventory stays in the canonical wallet after its NFT changes controller.
     await write(MAINNET.generations, generationsMock.abi, 'transfer', [1n, secondAccount.address]);
     assert.equal((await host.read(1n)).canControl, false);
-    await assert.rejects(host.redeem(1n, 8n, 1n), /control a hardwired Generations Friend/);
+    await assert.rejects(host.redeem(1n, 8n, 1n), /revert/i);
     const secondWallet = createWalletClient({ account: secondAccount, chain, transport, cacheTime: 0 });
     const newOwnerHost = createChanceGameTransport({ deployment, account: secondAccount.address, publicClient: client, walletClient: secondWallet });
     const redemption = await newOwnerHost.redeem(1n, 8n, 1n);
