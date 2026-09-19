@@ -50,7 +50,7 @@ The command builds contracts and SDK bindings first. It defaults to `examples/fi
 npm run deploy:contracts -- games/my-game/game.json
 ```
 
-It prints and saves `contracts/deployments/4663-<game-address>.json` after confirmation. The manifest contains addresses, terms and transaction hashes; **no private key**. On Linux and macOS the file is readable only by your user; on Windows the script grants access only to your account and prints a warning if it cannot. Set the shell variable below to the actual printed path:
+It prints and saves `contracts/deployments/4663-<game-address>.json` after confirmation. The manifest contains addresses, terms and transaction hashes; **no private key**. On Linux and macOS the file is readable only by your user; on Windows the script restricts it to your account and prints a warning if it cannot. Neither shuts out an administrator. Set the shell variable below to the actual printed path:
 
 ```sh
 FRIENDSDK_DEPLOYMENT='contracts/deployments/4663-0xYOUR_GAME_ADDRESS.json'

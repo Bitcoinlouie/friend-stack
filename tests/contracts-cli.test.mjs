@@ -206,8 +206,14 @@ test('manifest persists exact base-unit strings with restricted permissions and 
       const entries = execFileSync('icacls', [file], { encoding: 'utf8' })
         .split(/\r?\n/).filter(line => line.includes(':(')).map(line => line.replace(file, '').trim());
       const shown = JSON.stringify(entries);
-      assert.equal(entries.length, 1, `Expected one access entry, got ${entries.length}: ${shown}`);
-      assert.match(entries[0], new RegExp(`\\\\${userInfo().username}:\\(F\\)$`, 'i'));
+      // SYSTEM and Administrators are the machine's root-equivalents, and POSIX 0600 does not
+      // exclude root either; Administrators can take ownership whatever the DACL says. Their
+      // names are localized, so the well-known SIDs count too. Any other principal, or any
+      // surviving inherited entry, means the restriction did not take.
+      const administrative = /^(?:NT AUTHORITY\\SYSTEM|BUILTIN\\Administrators|S-1-5-18|S-1-5-32-544):/i;
+      const self = new RegExp(`\\\\${userInfo().username}:`, 'i');
+      assert.ok(entries.some(entry => self.test(entry) && entry.endsWith(':(F)')), `No full access for the current account: ${shown}`);
+      assert.deepEqual(entries.filter(entry => !self.test(entry) && !administrative.test(entry)), [], `Unexpected principal: ${shown}`);
       assert.ok(!entries.some(entry => entry.includes('(I)')), `An inherited access entry remains: ${shown}`);
     } else {
       assert.equal((await stat(file)).mode & 0o777, 0o600);
