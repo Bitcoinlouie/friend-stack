@@ -12,6 +12,11 @@ keyboard and touch controls. Place activities at interactable world locations
 or objects; use menus to support those interactions. Surrounding website pages
 are included only when explicitly requested.
 
+The runtime accepts games with their own setting, assets, visual style, camera
+and renderer. Fishing's scenery and the SDK's `GameWorld`, world assets and presets
+are optional example choices. Keep the selected Rare Friend's canonical sprites,
+SDK menus/actions, keyboard/touch controls and accessibility in the game frame.
+
 ## Use the runtime
 
 For component development, use the package runner:

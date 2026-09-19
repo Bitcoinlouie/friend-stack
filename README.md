@@ -6,7 +6,8 @@ Friend selection, inventory, action confirmations and a sandboxed **960 × 640**
 game container. Purchases and rewards are simulated by default.
 
 Start in this repository or install the package in your current project. The SDK
-includes the runtime, shared assets and examples needed to get started.
+includes the runtime, optional world assets and examples to get started. Choose
+the world's artwork and visual style to suit your game.
 
 ## What you need
 
@@ -99,8 +100,9 @@ and give your agent a brief such as this, replacing the bracketed description:
 > Read AGENTS.md, README.md, API.md, WORLD_RULES.md and FISHING_GAME_DESIGN.md.
 > Build [describe the game and its activities] in games/my-game, starting from
 > examples/starter. Work in this project and deliver the game component, assets
-> and rules. Use a playable world with keyboard and touch movement; put
-> activities at interactable world objects or locations. Keep all UI inside the
+> and rules. Choose world assets and an art style that fit my idea. Use a playable
+> world with keyboard and touch movement; put activities at interactable world
+> objects or locations. Keep all UI inside the
 > SDK's game container. Use the SDK runtime for wallet connection, owned Friend
 > selection, inventory and confirmations. Keep purchases and rewards simulated.
 > Do not add website navigation, headers, footers, About/Store pages, a separate
@@ -122,12 +124,14 @@ your own name in place of `my-game`. Your game files are:
 | --- | --- |
 | `index.tsx` | World, movement and interactions; default-export the game component |
 | `game.json` | Exact RF cost, outcome weights, rewards and consumable rules |
-| `style.css` and local assets | Game appearance using shared SDK artwork |
+| `style.css` and local assets | Your game's visual style and world artwork |
 | `README.md` | Your game's controls, run instructions and exact rules |
 
 The component receives `friendId`, `client` and `paused` through
-`GameComponentProps`. Use the SDK's fixed action client, menus, world, movement,
-sprite and sound modules. Pause movement and interactions when `paused` is true.
+`GameComponentProps`. Use the SDK's fixed action client and menus. The supplied
+world renderer, presets and scenery are optional; your component can use its own
+world assets and rendering approach. Use the canonical Friend sprites for the
+selected character, and pause movement and interactions when `paused` is true.
 Edit source files; `.friendsdk/` contains generated output.
 
 ### Required prototype identity and interface
@@ -138,8 +142,9 @@ and rewards belong to that NFT's canonical wallet. Mock identities are reserved
 for automated tests.
 
 Keep the world, vendors, inventory, reveals, settings and confirmations inside
-the same container. Preserve canonical Friend pixels, collision and depth
-sorting. Support keyboard/touch, mute, reduced motion, loading and error states.
+the same container. Preserve canonical Friend pixels and make collision and
+depth ordering match your world. Support keyboard/touch, mute, reduced motion,
+loading and error states.
 Use existing wallet and Friend context through `ConnectedGameHost` when supplied
 by the current project; see [the runtime guide](HOST_INTEGRATION.md).
 
@@ -275,7 +280,7 @@ publication. Automated checks do not deploy or publish games.
 | [AGENTS.md](AGENTS.md) | Instructions for your coding agent |
 | [API.md](API.md) | Exported modules and game actions |
 | [Runtime and capabilities](HOST_INTEGRATION.md) | Runtime integration, sandbox serving and implemented features |
-| [World rules](WORLD_RULES.md) | Canonical artwork, projection, collision and movement |
+| [World and character guidance](WORLD_RULES.md) | World design, canonical Friend sprites and optional renderer utilities |
 | [Fishing design](FISHING_GAME_DESIGN.md) | Complete example rules and reward table |
 | [Sound kit](SOUND_KIT.md) and [asset notices](NOTICE.md) | Audio controls and asset provenance |
 | [Contracts](contracts/README.md) | Optional contract deployment and developer tooling |

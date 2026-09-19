@@ -38,6 +38,12 @@ move the Friend. Sound, reduced motion, loading and error states are supported.
 collectible bitmaps. `sample-sprites.ts` records the source of canonical artwork
 samples. Artwork does not verify ownership.
 
+The fishing scenery, assets, palette, projection and camera are choices for this
+example. Creators may use their own world assets, visual style and renderer;
+`GameWorld` and the shipped world utilities are optional. Preserve the selected
+Rare Friend's canonical sprites, SDK menus/actions, keyboard/touch controls and
+accessibility in custom worlds.
+
 The [embedded example](../embedded/README.md) demonstrates the same runtime with
 a prebuilt sandbox child. [The runtime guide](../../HOST_INTEGRATION.md) documents
 the generic component interface and supported capabilities.

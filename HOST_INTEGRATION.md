@@ -22,6 +22,11 @@ games/my-game/
 and touch movement. Activities such as purchases and opening consumables belong
 at interactable world objects or locations; menus support those interactions.
 
+Choose your own setting, world assets, rendering approach, visual style, palette
+and camera. `GameWorld`, the shipped scenery and presets are optional utilities;
+the runtime does not require their illustration style. Preserve canonical Rare
+Friend sprites and keep SDK menus, actions and controls inside the game frame.
+
 From the SDK checkout:
 
 ```sh
@@ -227,7 +232,8 @@ deployment or bankroll withdrawals.
 | Wallet connection | EIP-6963/injected EIP-1193 browser wallets and account/network lifecycle. | WalletConnect and native-wallet deep links are not supplied. Connection grants no transaction permission. |
 | Owned Friend discovery | Account-filtered incoming/outgoing `Transfer` reads; current ownership, generation and canonical wallet checks. | RPC must supply complete filtered history. There is no collection-scan fallback. |
 | Prototype eligibility | Fresh `readGenerationEligibility` before play; account ownership and generation ≥ 1 required. | Discovery/artwork alone is insufficient. Identity changes require rechecking. |
-| World and menus | `GameWorld`, world presets, canonical sprites, movement, collision, HUD, inventory panels, reveals, sound and reduced motion. | Implement the requested game-specific activities and interactions. |
+| Optional world tools | `GameWorld`, world presets, scenery, movement and collision utilities. | Creators may supply their own assets, rendering, visual style and camera. |
+| Game UI and characters | Canonical Friend sprites, SDK menus, HUD, inventory panels, reveals, sound and reduced motion. | Preserve canonical Friend artwork, keyboard/touch controls and accessibility; keep menus and actions inside the frame. |
 | Simulated actions | `read`, `canBuy`, `buy`, `play`, `settle`, `redeem`; RF balances, consumables, rewards and reservation accounting. | Preview state is session-local and does not persist on-chain. |
 | Consumable mechanics | One configured consumable with a fixed weighted outcome table and exact RF values. | Multiple consumable tiers and arbitrary pack/NFT minting APIs are not implemented. |
 | Vendor redemption | Fixed-value redemption, kept-reward backing and no expiry. | Player-to-player trading is not implemented. |
