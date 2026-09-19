@@ -1,6 +1,6 @@
 # FriendSDK API
 
-SDK **0.1.0** exports browser ESM and TypeScript declarations. Import modules from
+SDK **v0.1** exports browser ESM and TypeScript declarations. Import modules from
 `@rarefriends/friendsdk/<module>`. Build with Node.js 22+ using `npm ci` and
 `npm run build`.
 
@@ -292,11 +292,13 @@ authenticated callback records the result; `settle(playId)` mints each reward.
 Use `npm run resolve:contracts -- <manifest> <playId>` for this sponsor/settlement
 step during development. It can be rerun for a pending or already settled play.
 The live runtime performs the same fixed request/settlement flow through
-`settle(playId)` with in-frame authorization and wallet prompts.
+`settle(playId)` with in-frame authorization and wallet prompts. See
+[oracle operations and recovery](docs/oracle/README.md) for the resolver workflow
+and proposed recovery work.
 
 ## Unsupported actions
 
-SDK v1 has no trading, listing, bidding, swap, creator-fee/revenue-share, wearable
+SDK v0.1 has no trading, listing, bidding, swap, creator-fee/revenue-share, wearable
 NFT or hat APIs. Fixed-price vendor redemption is the supported sale model.
 The browser runtime supports preview and explicitly configured live play. See the
 [capability list](HOST_INTEGRATION.md#capabilities) for implemented functions and

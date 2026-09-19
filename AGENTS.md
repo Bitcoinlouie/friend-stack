@@ -101,7 +101,7 @@ Do not expose funding or transaction clients to sandboxed game code.
 
 ## Game and delivery rules
 
-- Build the requested v1 game. No currencies beyond RF, launchpads, markets,
+- Build the requested v0.1 game. No currencies beyond RF, launchpads, markets,
   redemption expiry, activation gates or tier rules.
 - New purchases require free stake covering the highest prize. Every purchased
   consumable reserves its maximum prize. Pending plays and kept rewards cannot
@@ -120,7 +120,7 @@ Do not expose funding or transaction clients to sandboxed game code.
   publication requires separate Rare Friends review.
 
 See [the runtime guide and capability list](HOST_INTEGRATION.md). Trading,
-creator fees and wearable NFTs are not implemented SDK v1 capabilities.
+creator fees and wearable NFTs are not implemented SDK v0.1 capabilities.
 
 Contracts live in `contracts/`; read its `AGENTS.md` and `COMMANDMENTS.md` before
 contract work. Reference existing mainnet RF, Generations, canonical NFT wallets

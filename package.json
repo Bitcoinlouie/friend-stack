@@ -1,7 +1,7 @@
 {
   "name": "@rarefriends/friendsdk",
   "version": "0.1.0",
-  "description": "Rare Friends game building blocks and v1 chance-game reference",
+  "description": "Rare Friends game building blocks and v0.1 chance-game reference",
   "type": "module",
   "license": "UNLICENSED",
   "engines": {
@@ -19,6 +19,7 @@
     "NOTICE.md",
     "AGENTS.md",
     "FISHING_GAME_DESIGN.md",
+    "docs/oracle",
     "scripts",
     "tests",
     "games",

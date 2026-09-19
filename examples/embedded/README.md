@@ -1,4 +1,4 @@
-# Embedded fishing example · FriendSDK 0.1.0
+# Embedded fishing example · FriendSDK v0.1
 
 This example configures the reusable `GameHost` runtime with the fishing game.
 `GameHost` provides wallet connection, owned Friend discovery and selection,
@@ -25,7 +25,7 @@ The runner handles the game bundle, child handshake, static serving and runtime
 mount. A game directory contains `index.tsx` with a default-exported component
 accepting `GameComponentProps`, plus `game.json` and its assets. The SDK's
 `GameSession` handles the sandbox child session. See
-[the game guide](../../games/README.md) for the generic starter and package CLI.
+[the getting-started guide](../../README.md#build-your-game-with-an-ai-agent) for the generic starter and package CLI.
 
 For an existing React mount with a built child document:
 

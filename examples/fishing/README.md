@@ -1,4 +1,4 @@
-# Fishing example · FriendSDK 0.1.0
+# Fishing example · FriendSDK v0.1
 
 Fishing demonstrates a playable world, keyboard/touch movement, vendors,
 collection and reward reveals. Build the requested game component in the user's

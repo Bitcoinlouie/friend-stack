@@ -1,6 +1,6 @@
 # Game runtime and capabilities
 
-FriendSDK **0.1.0** runs a game component in a **960 × 640** container. The package
+FriendSDK **v0.1** runs a game component in a **960 × 640** container. The package
 provides wallet connection, owned Friend selection, fresh eligibility checks,
 a sandbox, simulated RF state by default and in-frame confirmations. An explicit
 deployment enables live contract actions. Build the component and
@@ -221,7 +221,7 @@ deployment or bankroll withdrawals.
 
 ## Capabilities
 
-| Capability | Implemented in SDK 0.1.0 | Limits or future work |
+| Capability | Implemented in SDK v0.1 | Limits or future work |
 | --- | --- | --- |
 | Generic game runtime | Directory runner, `GameHost`, `ConnectedGameHost`, `GameSession`, one 960 × 640 frame and sandbox bridge. | The game supplies its world, activities, assets and definition. |
 | Wallet connection | EIP-6963/injected EIP-1193 browser wallets and account/network lifecycle. | WalletConnect and native-wallet deep links are not supplied. Connection grants no transaction permission. |

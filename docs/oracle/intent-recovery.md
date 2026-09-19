@@ -5,6 +5,8 @@ play group. This is proposed later-phase contract work, not an implemented SDK
 runtime action. It applies to new deployments after the required implementation,
 review and explicit deployment authorization.
 
+See [oracle operations](README.md) for implemented request and settlement behavior.
+
 ## Required behavior
 
 A play group keeps its play IDs, consumables, pending count and reserved backing.
@@ -52,4 +54,4 @@ local-fork and explicitly authorized mainnet evidence separately.
 Acceptance requires controller-only access, correct delay/callback guards,
 atomic fee handling, rejection of stale callbacks, one settled outcome and
 unchanged backing across retry. Contract, CLI, local-chain and deployed-interface
-fork checks are specified in [the implementation plan](plan-oracle-recovery.md).
+fork checks are specified in [the implementation plan](plan-recovery.md).

@@ -1,4 +1,4 @@
-/** RF-only v1 game rules and a wallet-free preview. No chain calls or signing. */
+/** RF-only v0.1 game rules and a wallet-free preview. No chain calls or signing. */
 export const RF = 10n ** 18n;
 const UINT256_MAX = (1n << 256n) - 1n;
 

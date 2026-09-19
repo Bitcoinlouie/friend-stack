@@ -1,8 +1,11 @@
 # Plan: retry an unrevealed Dice request
 
-Planned implementation of [unrevealed-request recovery](intent-oracle-recovery.md).
+Planned implementation of [unrevealed-request recovery](intent-recovery.md).
 This requires explicitly scoped later-phase contract work. The retry is not an
 implemented runtime capability; deployment and transactions require separate authorization.
+
+See [oracle operations](README.md) for implemented behavior. Source paths and
+commands in this plan are relative to the SDK root.
 
 Terms used below. A **play group** (batch) is the set of plays committed in one `play` call; its ID is its first play ID and it gets one Dice request. The **Friend controller** is the NFT's current owner or the NFT's canonical wallet, the controller roles used for `buy`, `play` and `redeem`. **Reclaim** is Dice's own `refundRequest`, which the original requester may call once Dice's delay has passed; it clears the request and returns the fee paid.
 

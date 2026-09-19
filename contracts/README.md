@@ -1,4 +1,4 @@
-# Standalone FriendSDK v1 contracts
+# Standalone FriendSDK v0.1 contracts
 
 The package supplies immutable RF chance-game contracts and deployment tools.
 RF, Generations, canonical NFT wallets and Dice are existing mainnet dependencies
@@ -58,40 +58,78 @@ stake-funding transactions. The command builds contracts and SDK bindings and
 prints the saved public manifest path. Substitute your own `game.json` to deploy
 different terms. Keep private keys out of source, shell arguments and manifests.
 
-Set the following variable to the actual printed manifest path:
+The manifest is saved at `contracts/deployments/4663-<game-address>.json` and
+contains public addresses, game terms and transaction hashes. Replace
+`contracts/deployments/YOUR_DEPLOYMENT.json` below with the actual printed path.
+Run these commands in your Linux or Ubuntu/WSL terminal:
 
 ```sh
-FRIENDSDK_DEPLOYMENT='contracts/deployments/4663-0xYOUR_GAME_ADDRESS.json'
-npm run dev:game -- examples/fishing --deployment "$FRIENDSDK_DEPLOYMENT"
+npm run dev:game -- examples/fishing --deployment contracts/deployments/YOUR_DEPLOYMENT.json --outdir examples/fishing/.friendsdk/my-live
 ```
 
 To build static files for that deployment:
 
 ```sh
-node scripts/dev-game.mjs build examples/fishing --deployment "$FRIENDSDK_DEPLOYMENT" --outdir examples/fishing/.friendsdk/my-live
+node scripts/dev-game.mjs build examples/fishing --deployment contracts/deployments/YOUR_DEPLOYMENT.json --outdir examples/fishing/.friendsdk/my-live
 ```
 
 Host all files in `examples/fishing/.friendsdk/my-live/` as the static site root,
 following the [serving requirements](../HOST_INTEGRATION.md#serving-and-sandbox).
 Only public deployment fields enter the browser build. Omit `--deployment` for
-simulated actions. See the [root workflow](../README.md#deploy-your-game-to-mainnet)
-for deployment recovery and terminal play commands.
+simulated actions.
+
+### Resume a deployment
+
+Keep the saved manifest if deployment, approval or funding is interrupted:
+
+```sh
+npm run deploy:contracts -- --resume contracts/deployments/YOUR_DEPLOYMENT.json
+```
+
+If confirmation was interrupted before the game address was known, use the
+transaction-hash manifest path printed by the script. Resume observes recorded
+transactions before sending anything again.
+
+### Play from the terminal
+
+```sh
+npm run play:contracts -- contracts/deployments/YOUR_DEPLOYMENT.json
+```
+
+The command prompts for an owned hardwired Generations NFT's token ID. You can
+also pass the ID directly:
+
+```sh
+npm run play:contracts -- contracts/deployments/YOUR_DEPLOYMENT.json YOUR_TOKEN_ID
+```
+
+Enter the NFT owner's private key at the hidden prompt. Initial selection checks
+ownership and eligibility and resolves the canonical wallet. Contracts enforce
+authorization when actions execute. Review the amounts, then type `PLAY`. The
+command tops up the canonical NFT wallet if needed, buys one consumable if none
+is available, consumes it, pays the quoted Dice fee and waits for settlement.
+These are real mainnet transactions. Type `REDEEM` to sell a settled reward for RF
+paid to the Friend wallet, or press Enter to keep it.
+
+For a committed play awaiting delivery, use its existing play ID with the
+[oracle resolver](../docs/oracle/README.md#resolve-a-committed-play-from-the-terminal).
+It resumes that result without another purchase.
 
 ## Paid loop
 
 1. The developer approves exactly the selected RF stake and funds the game from their signing account.
 2. The NFT wallet approves exactly the purchase cost and calls `buy(friendId, quantity)`. Direct owner-funded purchases are rejected.
 3. `play(friendId, quantity)` burns prepaid consumables and commits play IDs. The first play ID is the group's `batchId`. It remains callable even when new purchases are unavailable.
-4. A sponsor calls `requestRandomness(batchId)` with the exact current fee from `Dice.getFeeV2(provider, 200000)`. The contract forwards the fee to `requestV2(provider, userRandomNumber, 200000)`. One request covers that play group.
-5. Dice calls `_entropyCallback(sequenceNumber, provider, randomNumber)`. Only the pinned oracle and provider can fulfill a known request, once. This callback only records the result.
-6. Anyone calls `settle(playId)`. The game derives the outcome from Dice's word, game address, chain ID, batch ID and play ID, then mints the reward into the canonical NFT wallet.
-7. The NFT's current owner or wallet can `redeem(friendId, outcomeId, quantity)`. The reward burns and its fixed RF value returns to that same NFT wallet.
+4. A sponsor pays the quoted Dice fee for the play group. The authenticated oracle callback records one random word.
+5. Anyone can settle a fulfilled play. Its reward is minted into the canonical NFT wallet.
+6. The NFT's current owner or wallet can `redeem(friendId, outcomeId, quantity)`. The reward burns and its fixed RF value returns to that same NFT wallet.
 
 No oracle token, subscription setup or separate keeper deployment is needed.
 `npm run play:contracts -- <manifest> [friendId]` prompts for an NFT ID when the
 argument is omitted, verifies the initial selection and pays for its committed play's RNG request.
 `npm run resolve:contracts` can resume a pending play. Running only the browser
-preview does not request oracle delivery.
+preview does not request oracle delivery. See [oracle operations and recovery](../docs/oracle/README.md)
+for the resolver workflow, implemented limits and proposed retry work.
 
 A Dice RNG request costs **0.000025 ETH**, excluding transaction gas. The browser
 runtime rejects a quoted fee above that amount. Pending plays reuse their
