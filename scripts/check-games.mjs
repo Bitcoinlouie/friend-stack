@@ -30,7 +30,8 @@ for (const path of paths) {
   if (path.startsWith('games/')) for (const source of Object.keys(result.metafile.inputs)) {
     const full = resolve(root, source), local = relative(directory, full);
     if (!local.startsWith(`..${sep}`) && local !== '..') continue;
-    if (full.startsWith(resolve(root, 'dist') + sep) || full.startsWith(resolve(root, 'src') + sep) || full.startsWith(resolve(root, 'node_modules') + sep)) continue;
+    // Public SDK stylesheet exports resolve into assets/ alongside src/ and dist/.
+    if (['dist', 'src', 'assets', 'node_modules'].some(directory => full.startsWith(resolve(root, directory) + sep))) continue;
     throw new Error(`${path}: undeclared source outside the game/SDK: ${source}`);
   }
   console.log(`${path}: valid; expected reward ${expectedReward(game)}; maximum ${maximumPrize(game)} RF base units; build ${result.outputFiles.reduce((n, file) => n + file.contents.length, 0)} bytes`);
