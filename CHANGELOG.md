@@ -17,5 +17,5 @@
   empty-result states, including a count of hidden generation-0 Friends.
 
 Playable previews still require a wallet owning an eligible Friend on Robinhood.
-Purchases and rewards remain simulated by default. This update does not publish
-the package to npm.
+Purchases and rewards remain simulated by default. The SDK is distributed as a
+package archive; publication to the npm registry is not planned.

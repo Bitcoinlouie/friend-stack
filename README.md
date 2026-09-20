@@ -236,7 +236,7 @@ npm ci
 npm pack
 ```
 
-This **v0.1.1** update uses npm version **0.1.1**. Copy
+This release uses package version **0.1.1**. Copy
 `rarefriends-friendsdk-0.1.1.tgz` into your existing project, then run there:
 
 ```sh
@@ -254,8 +254,8 @@ For an existing React
 mount, use `GameHost` or `ConnectedGameHost` from
 `@rarefriends/friendsdk/runtime`. See [runtime integration](HOST_INTEGRATION.md).
 
-The archive is the current distribution route; these instructions do not assume
-an npm registry release. Source code uses [Apache-2.0](LICENSE); artwork
+The SDK is distributed as a package archive. Publication to the npm registry
+is not planned. Source code uses [Apache-2.0](LICENSE); artwork
 permissions are separate. See [NOTICE.md](NOTICE.md).
 
 ### Check your game without a wallet
