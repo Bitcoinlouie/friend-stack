@@ -130,10 +130,10 @@ export async function createArtworkFixture() {
 export async function assertBounds(page) {
   assert.deepEqual(await page.evaluate(() => {
     const frame = document.querySelector(".rf-game-frame"), problems = [];
-    if (!frame) return ["Missing standard SDK frame"];
+    if (!frame) return ["Missing SDK frame"];
     if (document.querySelectorAll(".rf-game-frame").length !== 1) problems.push("Nested SDK frames");
     const bounds = frame.getBoundingClientRect();
-    if (Math.abs(bounds.width / bounds.height - 1.5) > .01) problems.push("Changed 960:640 aspect ratio");
+    if (bounds.width <= 0 || bounds.height <= 0) problems.push("Game frame has no visible area");
     if (document.documentElement.scrollWidth > innerWidth) problems.push("Page overflow");
     if ([...document.querySelectorAll("nav,footer")].some(node => !frame.contains(node))) problems.push("Unrequested website scaffolding");
     for (const node of document.querySelectorAll("button,input,select,iframe")) {

@@ -1,6 +1,7 @@
 # Game runtime and capabilities
 
-FriendSDK **v0.1.1** runs a game component in a **960 × 640** container. The package
+FriendSDK **v0.1.1** runs a game component in a sandboxed container with a
+customizable **960 × 640** reference layout. The package
 provides wallet connection, owned Friend selection, fresh eligibility checks,
 a sandbox, simulated RF state by default and in-frame confirmations. An explicit
 deployment enables live contract actions. Build the component and
@@ -12,24 +13,28 @@ size are allowed. See [the larger-world example](examples/scrolling-world).
 
 ## Run a component
 
-A game directory contains:
+For the supplied CLI, a game directory contains:
 
 ```text
 games/my-game/
   index.tsx   # Default-exported React game component
   game.json   # Consumable price and weighted outcomes
   assets/     # Game-specific assets, if needed
+  host.css    # Optional trusted runtime layout styles
 ```
 
 `index.tsx` accepts `GameComponentProps` from `@rarefriends/friendsdk/runtime`:
-`friendId`, `client` and `paused`. The game renders a playable world with keyboard
-and touch movement. Activities such as purchases and opening consumables belong
-at interactable world objects or locations; menus support those interactions.
+`friendId`, `client` and `paused`. Choose a genre, interface and controls that fit
+the idea. A walkable world with activities at objects or locations is one
+reference experience, not a requirement for puzzles, card games or other genres.
 
 Choose your own setting, world assets, rendering approach, visual style, palette
 and camera. `GameWorld`, the shipped scenery and presets are optional utilities;
-the runtime does not require their illustration style. Preserve canonical Rare
-Friend sprites and keep SDK menus, actions and controls inside the game frame.
+the runtime does not require their illustration style or canonical Friend pixel
+rendering. SDK menus are reference components; customize game UI while keeping
+game actions and trusted confirmations inside the sandboxed runtime frame.
+SDK artwork may be used and adapted in projects, including finished commercial
+projects; see [NOTICE.md](NOTICE.md).
 
 From the SDK checkout:
 
@@ -67,8 +72,8 @@ included only when explicitly requested.
 | `npx friendsdk check ./games/my-game` | Validates the game definition, imports and sandbox boundaries. |
 | `npx friendsdk test ./games/my-game` | Runs a headless browser smoke check using mock wallet/RPC/sprites. Add `--screenshot ./artifacts/game.png` or `--width 360`. Requires Playwright and Chromium. |
 
-`.friendsdk/` contains generated output. Edit `index.tsx`, `game.json` and assets,
-then rebuild; exclude generated output from source control.
+`.friendsdk/` contains generated output. Edit `index.tsx`, `game.json`, optional
+`host.css` and assets, then rebuild; exclude generated output from source control.
 
 Use `friendsdk --help` for options. Supported Node imports are
 `@rarefriends/friendsdk/build`, `/serve` and `/testing`; see
@@ -183,6 +188,41 @@ child. Component development through the runner supplies this wrapper and
 serving configuration automatically. [API.md](API.md) describes the low-level
 modules for advanced integrations.
 
+Keep an existing project's file structure, build tools and renderer if they
+suit your game. A thin React adapter inside `GameSession` can connect a canvas
+or other renderer to `friendId`, `client` and `paused`; the game itself need not
+be written in React. Build that child document with your own tools and preserve
+the [sandbox serving policy](#serving-and-sandbox). Wallet connection, eligibility
+and action confirmations stay in the trusted runtime.
+Call `client.read()` when the child session starts so the runtime receives its
+initial snapshot and finishes loading, including for games without economy actions.
+
+The CLI path still needs `index.tsx` and `game.json`; its checker also requires a
+README and rejects source outside the game directory except SDK files and
+dependencies. A custom build may use existing entry points and equivalent
+checks. The runtime currently requires a `ChanceGameDefinition` even if no
+economy actions are used; its schema requires a positive price, weights totaling
+10,000 basis points and at least one positive prize. Document unused reference
+terms as such rather than advertising them as game mechanics.
+
+The container size and SDK game menus are customizable references. For a wider
+CLI layout, create `host.css` in the game directory. These layout options are
+available from this checkout, not the published v0.1.1 archive:
+
+```css
+:root {
+  --rf-game-max-width: 1200px;
+  --rf-game-aspect-ratio: 16 / 9;
+}
+```
+
+For a portrait game, use `480px` and `3 / 4`. Defaults are `960px` and `3 / 2`.
+The CLI loads `host.css` in the trusted runtime document, separately from game
+styles imported by `index.tsx`. In a custom host, set the same variables on the
+wrapper around `GameHost` or `ConnectedGameHost`. Styles inside the sandboxed
+child cannot resize the host. Keep trusted identity and transaction confirmations
+visible and check the resulting layout on supported devices.
+
 ## Identity and session behavior
 
 Every playable prototype requires a connected account that owns a hardwired
@@ -215,6 +255,7 @@ and ownership reads do not sign, deploy or spend.
 Developers may host public playable submission previews on **GitHub Pages** or
 another static host without separate Rare Friends approval, including the bundled
 SDK runtime and artwork. Keep the real ownership gate and simulated economy.
+Artwork permission also covers finished commercial projects; see [NOTICE.md](NOTICE.md).
 See [build and GitHub Pages instructions](README.md#build-and-share-a-preview).
 
 The runner supplies a sandbox document and development server. For static
@@ -232,7 +273,7 @@ navigation permissions.
 The opaque sandbox cannot use `localStorage` or IndexedDB. The bridge has no save
 API, and simulated ledgers are session-local; a reload starts fresh. The frame's
 toolbar overlays the bottom-left and menu button overlays the bottom-right, so
-leave space for those controls when placing HUD elements. Its 3:2 aspect ratio
+leave space for those controls when placing HUD elements. Its default 3:2 aspect ratio
 makes a 360-pixel-wide frame about 240 pixels tall; check text and touch targets
 at that size. See [practical details](README.md#larger-worlds-and-practical-details).
 
@@ -246,17 +287,24 @@ deployment or bankroll withdrawals.
 
 ## Capabilities
 
+Durable items, cosmetics, perks, upgrades and additional currencies are welcome
+when backed by or integrated with **$RAREFRIENDS (RF)**. Document that relationship.
+The current client implements the supplied
+chance-game economy; other mechanics may need custom integration. Missing APIs
+below describe implementation work, not restrictions on submission ideas.
+
 | Capability | Implemented in SDK v0.1.1 | Limits or future work |
 | --- | --- | --- |
-| Generic game runtime | Directory runner, `GameHost`, `ConnectedGameHost`, `GameSession`, one 960 × 640 frame and sandbox bridge. | The game supplies its world, activities, assets and definition. |
+| Generic game runtime | Directory runner, `GameHost`, `ConnectedGameHost`, `GameSession`, customizable frame and sandbox bridge. | 960 × 640 is the reference layout. Existing renderers/build tools can use a thin React adapter. |
 | Wallet connection | EIP-6963/injected EIP-1193 browser wallets and account/network lifecycle. | WalletConnect and native-wallet deep links are not supplied. Connection grants no transaction permission. |
 | Owned Friend discovery | Account-filtered incoming/outgoing `Transfer` reads; current ownership, generation and canonical wallet checks. | RPC must supply complete filtered history. There is no collection-scan fallback. |
 | Prototype eligibility | Fresh `readGenerationEligibility` before play; account ownership and generation ≥ 1 required. | Discovery/artwork alone is insufficient. Identity changes require rechecking. |
 | Optional world tools | `GameWorld`, world presets, scenery, movement and collision utilities; scrolling-world example. | Creators may supply their own assets, rendering, visual style and camera. The viewport does not limit world dimensions. |
 | Build and test tools | CLI init/dev/build/check/test and supported Node build/serve/testing imports. | Headless mock tests require Playwright; playable previews require a real eligible wallet. |
-| Game UI and characters | Canonical Friend sprites, SDK menus, HUD, inventory panels, reveals, sound and reduced motion. | Preserve canonical Friend artwork, keyboard/touch controls and accessibility; keep menus and actions inside the frame. |
+| Game UI and characters | Optional Friend sprites, SDK menus, HUD, inventory panels, reveals, sound and reduced motion. | Choose character rendering, UI and genre-appropriate accessible controls; keep game actions and confirmations inside the frame. |
 | Simulated actions | `read`, `canBuy`, `buy`, `play`, `settle`, `redeem`; RF balances, consumables, rewards and reservation accounting. | Preview state is session-local and resets on reload. No save bridge is supplied. |
 | Consumable mechanics | One configured consumable with a fixed weighted outcome table and exact RF values. | Multiple consumable tiers and arbitrary pack/NFT minting APIs are not implemented. |
+| Other item and currency mechanics | Durable items, cosmetics, perks/upgrades and additional currencies are welcome when backed by or integrated with RF. | No general upgrade or additional-currency actions are supplied; persistent progress and these actions need custom integration. |
 | Vendor redemption | Fixed-value redemption, kept-reward backing and no expiry. | Player-to-player trading is not implemented. |
 | Live contract actions | `createLiveGameClient` and the bridge support buy/play/settle/redeem; exact RF approval, a selected canonical wallet, contract-enforced ownership and receipt/event verification. | Requires an explicit deployment, owning wallet, RF and ETH gas. |
 | Friend wallet RF transfer | Trusted in-frame control transfers an entered amount from the connected account to the verified canonical NFT wallet. | Separate wallet-confirmed transaction; unavailable to sandboxed game code. |
@@ -277,9 +325,11 @@ does not authorize funding, contract deployment, signatures, transactions or
 official Rare Friends production publication. Static simulated preview hosting
 is allowed as described above.
 
-Paid outcomes must come from contracts and verified receipts. Consumables and
-rewards belong to the NFT's canonical wallet. Every purchased consumable reserves
-its maximum prize; pending plays and kept rewards cannot share backing. See
+Paid on-chain outcomes must come from contracts and verified receipts. The
+supplied chance game's consumables and rewards belong to the NFT's canonical
+wallet. Each purchased consumable reserves its maximum prize; pending plays and
+kept rewards cannot share backing. Promised RF redemption must remain backed;
+non-redeemable cosmetics or upgrades do not automatically need prize reserves. See
 [the API](API.md#optional-contract-transport) and [contract notes](contracts/README.md)
 for later-phase transport and accounting requirements.
 
@@ -304,8 +354,9 @@ npm run check:browser
 ```
 
 `npm run check:runtime` runs the generic runtime browser check alone. Validate
-keyboard/touch movement, interaction reach, container bounds and the simulated
-loop. Verify disconnected, wrong-network, non-owner, generation-zero and failed
+genre-appropriate controls, layout on supported devices and the simulated loop.
+For moving worlds, also check movement and interaction reach. Verify disconnected,
+wrong-network, non-owner, generation-zero and failed
 reads cannot play, and identity changes cancel pending actions.
 
 `npm run check:live` runs the live-mode browser fixture with mocked transactions,

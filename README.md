@@ -1,17 +1,18 @@
 # FriendSDK v0.1.1
 
 Build a playable Rare Friends game with your AI coding agent. You create the
-world, activities and game rules; the SDK supplies wallet connection, owned
-Friend selection, inventory, action confirmations and a sandboxed **960 × 640**
-game container. Purchases and rewards are simulated by default.
+experience and game rules; the SDK supplies wallet connection, owned Friend
+selection, a reference inventory and action flow, and a sandboxed game container.
+The reference layout is **960 × 640** and can be customized. Purchases and rewards
+are simulated by default.
 
 Start in this repository or install the package in your current project. The SDK
 includes the runtime, optional world assets and examples to get started. Choose
 the world's artwork and visual style to suit your game.
 
 **World size is yours to choose.** The 576 × 384 plane belongs to the optional
-renderer; custom cameras and worlds of any size are allowed. The 960 × 640
-container is the viewing window, not a world boundary. See the
+renderer; custom cameras and worlds of any size are allowed. The container is
+the viewing window, not a world boundary. See the
 [scrolling-world example](examples/scrolling-world) for a larger map and camera.
 
 ## Is FriendSDK right for your idea?
@@ -19,6 +20,14 @@ container is the viewing window, not a world boundary. See the
 FriendSDK fits games that use its Friend identity, sandboxed viewport and game
 actions. Before building, check the [current capabilities](HOST_INTEGRATION.md#capabilities)
 against your idea. Coding agents should make this check before scaffolding a project.
+
+Durable items, cosmetics, perks, upgrades and additional currencies are welcome
+when backed by or integrated with **$RAREFRIENDS (RF)**. Document that relationship
+in your submission. The supplied chance-game client
+currently supports one consumable and one weighted outcome table. Other mechanics
+may need custom integration; persistent saves, upgrade actions and additional
+currency APIs are not supplied. These API limits do not define which ideas you
+may submit.
 
 **FriendSDK is optional for vibeathon submissions.** If you're building a launchpad,
 tool, agent or another experience that doesn't fit the SDK, use the stack and
@@ -125,14 +134,15 @@ refresh the browser to see them. Press **Ctrl+C** to stop the server.
 Open this project folder in your agent. After trying the starter, stop its server
 and give your agent a brief such as this, replacing the bracketed description:
 
-> Read AGENTS.md, README.md, API.md, WORLD_RULES.md and FISHING_GAME_DESIGN.md.
+> Read AGENTS.md, README.md, API.md and WORLD_RULES.md. Read
+> FISHING_GAME_DESIGN.md if using its economy.
 > Build [describe the game and its activities] in games/my-game, starting from
 > examples/starter. Work in this project and deliver the game component, assets
-> and rules. Choose world assets and an art style that fit my idea. Use a playable
-> world with keyboard and touch movement; put activities at interactable world
-> objects or locations. Keep all UI inside the
-> SDK's game container. Use the SDK runtime for wallet connection, owned Friend
-> selection, inventory and confirmations. Keep purchases and rewards simulated.
+> and rules. Choose assets, rendering, layout and controls that fit my idea.
+> Use the starter's walkable world and menus where they help the experience.
+> Keep game UI inside the sandboxed container. Use the SDK runtime for wallet
+> connection, owned Friend selection, inventory and confirmations. Keep purchases
+> and rewards simulated.
 > Do not add website navigation, headers, footers, About/Store pages, a separate
 > wallet flow or another application checkout. Run the relevant checks and give
 > me the command and local URL to play.
@@ -150,16 +160,17 @@ your own name in place of `my-game`. Your game files are:
 
 | File | What your agent changes |
 | --- | --- |
-| `index.tsx` | World, movement and interactions; default-export the game component |
+| `index.tsx` | Game interface and interactions; default-export the game component or adapter |
 | `game.json` | Exact RF cost, outcome weights, rewards and consumable rules |
 | `style.css` and local assets | Your game's visual style and world artwork |
+| `host.css` (optional) | Trusted runtime layout, including container size/aspect ratio |
 | `README.md` | Your game's controls, run instructions and exact rules |
 
 The component receives `friendId`, `client` and `paused` through
-`GameComponentProps`. Use the SDK's fixed action client and menus. The supplied
-world renderer, presets and scenery are optional; your component can use its own
-world assets and rendering approach. Use the canonical Friend sprites for the
-selected character, and pause movement and interactions when `paused` is true.
+`GameComponentProps`. Use the SDK's fixed action client for supported actions;
+its menus are reference components for your game UI. The supplied world renderer,
+presets, scenery and Friend sprites are optional. Choose character rendering and
+artwork that fit your game, and pause gameplay interactions when `paused` is true.
 Edit source files; `.friendsdk/` contains generated output.
 
 ### Required prototype identity and interface
@@ -169,30 +180,53 @@ before play and rechecks when the account, network or selection changes. Items
 and rewards belong to that NFT's canonical wallet. Mock identities are reserved
 for automated tests.
 
-Keep the world, vendors, inventory, reveals, settings and confirmations inside
-the same container. Preserve canonical Friend pixels and make collision and
-depth ordering match your world. Support keyboard/touch, mute, reduced motion,
-loading and error states.
+Keep game UI and runtime confirmations inside the sandboxed container. Choose
+controls appropriate to the genre and target devices; a puzzle or card game does
+not need character movement. Make touch interactions usable on supported phones,
+provide keyboard access where appropriate, support reduced motion, and show
+loading and error states. If the game has audio, provide mute controls. For moving
+worlds, keep collision, pointer input and layering consistent with the camera.
 Use existing wallet and Friend context through `ConnectedGameHost` when supplied
 by the current project; see [the runtime guide](HOST_INTEGRATION.md).
 
 ### Larger worlds and practical details
 
 Run `npm run dev:game -- examples/scrolling-world` to try a larger world inside
-the same frame. Custom cameras, scrolling maps and connected rooms are allowed;
+the reference frame. Custom cameras, scrolling maps and connected rooms are allowed;
 choose a world size that performs well on your target devices. The optional
 `GameWorld` renderer's fixed camera is one starting point, not a platform limit.
+
+The **960 × 640** layout and SDK menus are references, not fixed presentation
+requirements. The layout options below are available in this checkout; build
+an archive with `npm pack` to use them in another project. The published v0.1.1
+archive predates these options. For a wider CLI game, add a `host.css` file in
+its game directory:
+
+```css
+:root {
+  --rf-game-max-width: 1200px;
+  --rf-game-aspect-ratio: 16 / 9;
+}
+```
+
+Use `480px` and `3 / 4` for a portrait layout. The defaults are `960px` and `3 / 2`.
+The CLI loads `host.css` into the trusted runtime page; your child `style.css`
+still controls the game UI. In a custom host, set these variables on the wrapper
+around `GameHost` or `ConnectedGameHost`. See
+[runtime integration](HOST_INTEGRATION.md#react-runtime).
+Restart the dev runner after adding `host.css` for the first time; edits to an
+existing file rebuild automatically.
 
 - **Toolbar:** the runtime overlays wallet/Friend controls at the bottom-left
   and a menu button at the bottom-right. Place important HUD controls clear of
   them and check on a phone-sized viewport.
-- **Small screens:** the frame keeps its 3:2 aspect ratio. At 360 pixels wide it
-  is about 240 pixels tall; make text and touch targets readable at that size.
+- **Small screens:** the default frame keeps a 3:2 aspect ratio. At 360 pixels
+  wide it is about 240 pixels tall; check your chosen layout on target devices.
 - **Storage:** the sandbox has no `localStorage` or IndexedDB access and the
   bridge has no save API. Simulated balances and inventory last for the runtime
   session; reloading starts a new session. Persistent progress is not supplied.
-- **Input:** transform pointer coordinates through your camera and display
-  scale, and pause movement when the runtime opens a menu.
+- **Input:** where the game uses a camera, transform pointer coordinates through
+  its display scale. Pause gameplay interactions when the runtime opens a menu.
 
 ## Try the fishing example
 
@@ -222,8 +256,9 @@ separate from game development.
 
 **You may deploy and share public playable previews on GitHub Pages or another
 static host, including from your own fork. No separate Rare Friends approval is
-required for submission previews.** This permission includes the bundled SDK
-runtime and SDK-supplied artwork used in the preview. Keep the wallet/ownership
+required for submission previews.** You may use and adapt SDK-supplied artwork
+in your projects, including finished commercial projects; see [NOTICE.md](NOTICE.md).
+The SDK source is Apache-2.0. Keep the wallet/ownership
 gate and label the economy as simulated. Official publication through Rare
 Friends remains a separate review.
 
@@ -283,9 +318,18 @@ Build with `npx friendsdk build ./games/my-game`, then validate with
 runtime; your agent works in your current project. Node tooling has supported
 `@rarefriends/friendsdk/build`, `/serve` and `/testing` imports; no relative
 imports into `node_modules` are needed. See [tooling APIs](API.md#node-tooling).
-For an existing React
-mount, use `GameHost` or `ConnectedGameHost` from
-`@rarefriends/friendsdk/runtime`. See [runtime integration](HOST_INTEGRATION.md).
+Keep your existing project structure, renderer and build tools if they suit your
+game. Mount `GameHost` or `ConnectedGameHost` in the trusted page and use a thin
+React `GameSession` adapter in a separately built sandboxed child. That adapter
+can pass `friendId`, `client` and `paused` to your existing renderer; the game
+itself need not be written in React. Keep the runtime's identity gate, sandbox
+and confirmations. See [runtime integration](HOST_INTEGRATION.md#react-runtime).
+
+The CLI route still expects `index.tsx` and `game.json`; its checker allows game
+sources within that game directory plus the SDK and dependencies. A custom
+build may use your project's own entry points and validation, with the same
+runtime/sandbox requirements. The current runtime still accepts a
+`ChanceGameDefinition`, even when your game does not use its economy actions.
 
 The SDK is distributed as a package archive. Publication to the npm registry
 is not planned. Source code uses [Apache-2.0](LICENSE); artwork
@@ -341,9 +385,10 @@ covers that connection, deployment resume and terminal play.
 
 ## Verify and submit
 
-For a game, build it, run `friendsdk check` and `friendsdk test` as above, and
-check its keyboard/touch interactions. For SDK changes, run the relevant tests
-and checks from the SDK root:
+For a CLI game, build it, run `friendsdk check` and `friendsdk test` as above, and
+check its genre-appropriate controls on target devices. For a custom build, run
+your equivalent build and browser checks, including the real ownership gate.
+For SDK changes, run the relevant tests and checks from the SDK root:
 
 ```sh
 npm test
@@ -363,10 +408,13 @@ submission README and PR description, with the required wallet/network and
 controls. GitHub Pages is an allowed host; use the steps above.
 
 Submit the game source and assets, run instructions, SDK version **v0.1.1** and
-exact costs, outcome weights, rewards and consumable rules. RF uses bigint base
-units (`1 RF = 10n ** 18n`). Each purchased consumable reserves its maximum prize;
-kept rewards retain their RF backing with no redemption expiry. Label simulated
-results, and claim live transactions only after verified receipts.
+exact costs and rules for its items, rewards, upgrades and currencies. Include
+outcome weights and consumable rules when using the supplied chance game. RF uses
+bigint base units (`1 RF = 10n ** 18n`). In that chance game, each purchased
+consumable reserves its maximum prize and kept rewards retain their RF backing
+with no redemption expiry. Promised RF redemption must remain backed; cosmetics
+or upgrades without an RF redemption promise do not need a prize reserve. Label
+simulated results, and claim live transactions only after verified receipts.
 
 Record asset sources and any capability gaps. Supply thumbnail/title, developer
 credit, About and Store metadata only when requested by the publishing interface.
@@ -381,7 +429,7 @@ may host submission previews themselves or through their own Pages workflow.
 | [AGENTS.md](AGENTS.md) | Instructions for your coding agent |
 | [API.md](API.md) | Exported modules and game actions |
 | [Runtime and capabilities](HOST_INTEGRATION.md) | Runtime integration, sandbox serving and implemented features |
-| [World and character guidance](WORLD_RULES.md) | World design, canonical Friend sprites and optional renderer utilities |
+| [World and character guidance](WORLD_RULES.md) | World design, character rendering and optional renderer utilities |
 | [Fishing design](FISHING_GAME_DESIGN.md) | Complete example rules and reward table |
 | [Sound kit](SOUND_KIT.md) and [asset notices](NOTICE.md) | Audio controls and asset provenance |
 | [Contracts](contracts/README.md) | Optional contract deployment and developer tooling |

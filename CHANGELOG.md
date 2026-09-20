@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Welcomed durable items, cosmetics, perks, upgrades and additional currencies
+  backed by or integrated with $RAREFRIENDS, with the NFT ownership gate retained.
+- Made layouts, menus, character rendering, genre-specific controls and project
+  structure flexible; documented current runtime and economy limitations.
+- Added optional `host.css` and CSS variables for custom runtime frame dimensions.
+- Allowed SDK artwork use and modification in finished and commercial projects.
+
 ## 0.1.1
 
 - Added `friendsdk test` and an exported automated browser harness with mock
