@@ -1,6 +1,7 @@
 What does the player do, and what can they win?
 
 - Game directory and run instructions:
+- Public playable preview URL for vibeathon games (GitHub Pages allowed), wallet/network requirements and controls:
 - SDK version:
 - RF cost, outcome table, and highest prize:
 - Asset sources:
@@ -11,4 +12,4 @@ What does the player do, and what can they win?
 - Verified wallet connection and fresh hardwired-NFT ownership gate before simulated play:
 - Checks run and known limitations:
 
-Production publication requires separate Rare Friends review. A developer deployment does not publish a game.
+Public playable submission previews on GitHub Pages or another static host need no separate Rare Friends approval. Official production publication through Rare Friends requires review.

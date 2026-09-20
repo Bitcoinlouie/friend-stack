@@ -1,9 +1,9 @@
 # Notices
 
 FriendSDK source code is licensed under the Apache License, Version 2.0.
-See [LICENSE](LICENSE). This source-code license does not grant rights to the
-Rare Friends artwork listed below; artwork distribution requires Rare Friends
-permission.
+See [LICENSE](LICENSE). SDK-supplied artwork may be included in publicly hosted
+playable submission previews, including on GitHub Pages, without separate Rare
+Friends approval. Other artwork uses require Rare Friends permission.
 
 World artwork and presets: Rare Friends Isometric World Assets.
 Character artwork: canonical Rare Friends Generations sprites.

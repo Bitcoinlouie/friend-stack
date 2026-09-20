@@ -216,6 +216,11 @@ and ownership reads do not sign, deploy or spend.
 
 ## Serving and sandbox
 
+Developers may host public playable submission previews on **GitHub Pages** or
+another static host without separate Rare Friends approval, including the bundled
+SDK runtime and artwork. Keep the real ownership gate and simulated economy.
+See [build and GitHub Pages instructions](README.md#build-and-share-a-preview).
+
 The runner supplies a sandbox document and development server. For static
 hosting, upload the entire chosen build output to an HTTPS static host and use
 its `index.html` as the entry point. Preserve file names, subfolders and relative
@@ -264,7 +269,7 @@ deployment or bankroll withdrawals.
 | Planned RNG subsidy | Rare Friends plans to subsidize RNG costs for all developers. | Not implemented by the demo; its wallet-paid RNG flow demonstrates the cost. |
 | Creator fees | No creator royalty, revenue-share or fee-claim actions. | Prize stake and developer free-stake withdrawals are separate contract operations. |
 | Wearable NFTs | No hat purchase, mint, equip or item-for-hat actions. | Requires separately scoped NFT capabilities. |
-| Publication | Builds, validation and reviewable source/assets. | Production publication requires Rare Friends review and agreement. CI does not deploy or publish. |
+| Publication | Public playable previews on GitHub Pages or other static hosts; developer-controlled preview workflows are allowed. | Official production publication through Rare Friends requires review and agreement. This repository's CI remains checks-only. |
 
 ## On-chain phase
 
@@ -272,7 +277,9 @@ Keep prototype economy actions simulated unless explicitly instructed otherwise.
 Defer transaction adapters, deployment flows and custom Solidity to the phase
 with the Rare Friends team after publishing requirements are met. Record intended
 actions and integration gaps for that review. An explicit on-chain coding request
-does not authorize funding, deployment, signatures, transactions or publication.
+does not authorize funding, contract deployment, signatures, transactions or
+official Rare Friends production publication. Static simulated preview hosting
+is allowed as described above.
 
 Paid outcomes must come from contracts and verified receipts. Consumables and
 rewards belong to the NFT's canonical wallet. Every purchased consumable reserves

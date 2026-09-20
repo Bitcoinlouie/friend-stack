@@ -220,6 +220,13 @@ separate from game development.
 
 ## Build and share a preview
 
+**You may deploy and share public playable previews on GitHub Pages or another
+static host, including from your own fork. No separate Rare Friends approval is
+required for submission previews.** This permission includes the bundled SDK
+runtime and SDK-supplied artwork used in the preview. Keep the wallet/ownership
+gate and label the economy as simulated. Official publication through Rare
+Friends remains a separate review.
+
 Build your component from the SDK root:
 
 ```sh
@@ -231,7 +238,21 @@ npx friendsdk check games/my-game
 The output is `games/my-game/.friendsdk/`. Use that folder as your static site's
 root and upload all generated HTML, JavaScript, CSS and assets. Preserve relative
 paths and the sandbox document's CSP. See [serving requirements](HOST_INTEGRATION.md#serving-and-sandbox)
-for HTTPS hosting. Publishing a game requires its own explicit authorization.
+for HTTPS hosting.
+
+To host on **GitHub Pages**:
+
+1. Copy the **contents** of `games/my-game/.friendsdk/` into the root of a dedicated
+   `gh-pages` branch in your repository or fork. Keep `index.html`, `game.html`,
+   JavaScript, CSS and asset folders together, and add an empty `.nojekyll` file.
+2. In **Settings → Pages**, choose **Deploy from a branch**, select `gh-pages`
+   and **/(root)**, then save. See [GitHub's publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+3. Open `https://<account>.github.io/<repository>/`, verify the preview works,
+   and add that URL to your submission README and PR description.
+
+You may also use your own GitHub Pages Actions workflow to deploy the generated
+files. Players still need an eligible Friend and a wallet on Robinhood mainnet;
+the automated test harness's mocked wallet is not included in public builds.
 
 To play from another device on your local network:
 
@@ -298,9 +319,10 @@ does not verify real ownership reads or replace a real-wallet playtest.
 ## Optional contract development
 
 Keep the first game prototype simulated. Use the supplied live adapter and
-contract tools when you explicitly choose to implement on-chain play. Deployment,
-funding, wallet transactions and publication each require the applicable explicit
-authorization. Production publication requires separate Rare Friends review.
+contract tools when you explicitly choose to implement on-chain play. Contract
+deployment, funding and wallet transactions require explicit authorization.
+Official production publication through Rare Friends requires separate review;
+[hosting a simulated submission preview](#build-and-share-a-preview) is allowed.
 
 ### Deploy your game to mainnet
 
@@ -340,6 +362,10 @@ package installation. Foundry is optional for the SDK checks: local contract
 integration tests report a skip when its tools are unavailable. For contract
 changes, also run the checks in the [contract guide](contracts/README.md).
 
+For vibeathon game submissions, include a **public playable preview URL** in the
+submission README and PR description, with the required wallet/network and
+controls. GitHub Pages is an allowed host; use the steps above.
+
 Submit the game source and assets, run instructions, SDK version **v0.1.1** and
 exact costs, outcome weights, rewards and consumable rules. RF uses bigint base
 units (`1 RF = 10n ** 18n`). Each purchased consumable reserves its maximum prize;
@@ -348,8 +374,9 @@ results, and claim live transactions only after verified receipts.
 
 Record asset sources and any capability gaps. Supply thumbnail/title, developer
 credit, About and Store metadata only when requested by the publishing interface.
-Rare Friends reviews the game and assets against `AGENTS.md` before production
-publication. Automated checks do not deploy or publish games.
+Rare Friends reviews the game and assets against `AGENTS.md` before official
+production publication. This repository's checks do not deploy games; developers
+may host submission previews themselves or through their own Pages workflow.
 
 ## Reference docs
 

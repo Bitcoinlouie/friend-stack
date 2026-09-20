@@ -92,9 +92,18 @@ On-chain implementation is a later phase with the Rare Friends team after the
 experience passes publishing requirements. Document intended actions and
 capability gaps for that review. Existing contract tools and transport docs are
 references for that phase. An explicit request for on-chain coding does not
-authorize funding, deployment, signatures, wallet transactions or publication;
+authorize funding, contract deployment, signatures, wallet transactions or
+official Rare Friends production publication;
 obtain the applicable explicit authorization. Report publishing readiness only
 when supported by evidence.
+
+Public playable submission previews may be hosted on GitHub Pages or another
+static host, including from a developer's fork, without separate Rare Friends
+approval. Developers may deploy the bundled runtime and SDK-supplied artwork for
+these previews. Keep the real wallet/eligibility gate and simulated economy.
+When the developer asks to host a preview, follow that request without adding
+another Rare Friends permission step. Official Rare Friends production
+publication and on-chain transactions retain their separate authorization rules.
 
 For explicitly requested live play, use the SDK runtime with a public deployment
 configuration (`--deployment` in the CLI). Keep exact RF approvals, wallet
@@ -121,11 +130,15 @@ Do not expose funding or transaction clients to sandboxed game code.
   keyboard/touch, mute, reduced motion, loading and errors.
 - Do not expose a signer, arbitrary calldata, deployment or bankroll withdrawal
   powers to game code.
+- For vibeathon game submissions, include a public playable preview URL and its
+  wallet/network requirements. GitHub Pages is allowed.
 - Submit source/assets, run instructions, SDK version, exact RF cost, outcome
   weights, rewards and consumable rules. Use bigint RF base units.
 - Run the relevant tests, typecheck, game validation and browser checks. Report
-  failures honestly. Do not deploy or publish from PR automation. Production
-  publication requires separate Rare Friends review.
+  failures honestly. Do not deploy contracts or publish to Rare Friends production
+  from PR automation. Developer-controlled static preview workflows, including
+  GitHub Pages, are allowed. Official production publication requires separate
+  Rare Friends review.
 
 See [the runtime guide and capability list](HOST_INTEGRATION.md). Trading,
 creator fees and wearable NFTs are not implemented SDK v0.1 capabilities.

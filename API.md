@@ -317,9 +317,11 @@ unmount. Community code stays in the sandbox.
 ## Optional contract transport
 
 On-chain implementation is a later phase with the Rare Friends team after
-publishing requirements are met, unless explicitly requested. Funding,
-deployment, signatures, transactions and publication require their applicable
-explicit authorization. Contract tooling is described in [README.md](README.md#optional-contract-development)
+publishing requirements are met, unless explicitly requested. Funding, contract
+deployment, signatures, transactions and official Rare Friends production
+publication require their applicable explicit authorization. Public simulated
+previews on GitHub Pages are allowed; see [hosting instructions](README.md#build-and-share-a-preview).
+Contract tooling is described in [README.md](README.md#optional-contract-development)
 and [contracts/README.md](contracts/README.md).
 
 For explicitly approved real contract testing, deploy the standalone game with
