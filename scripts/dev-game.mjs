@@ -84,6 +84,12 @@ export async function buildGame(gameDirectory, { outdir = path.join(gameDirector
   const definition = parseChanceGame(JSON.parse(await readFile(definitionPath, 'utf8')));
   const componentPath = path.join(directory, 'index.tsx');
   await stat(componentPath);
+  const hostStylePath = path.join(directory, 'host.css');
+  let hostStyleImport = '';
+  try {
+    await stat(hostStylePath);
+    hostStyleImport = `import ${JSON.stringify(hostStylePath)};`;
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await mkdir(outdir, { recursive: true });
   outdir = await realpath(outdir);
   for (const source of [directory, await realpath(process.cwd()), await realpath(sdkRoot)]) {
@@ -138,6 +144,7 @@ const definition = parseChanceGame(gameJson);`;
   const host = await context({ ...common, outfile: path.join(outdir, 'runtime.js'), stdin: {
     resolveDir: directory, sourcefile: 'runtime.tsx', loader: 'tsx', contents: `${shared}
 import {GameHost} from '@rarefriends/friendsdk/runtime';
+${hostStyleImport}
 const deployment = ${JSON.stringify(liveDeployment) ?? 'undefined'};
 if (deployment) deployment.deploymentBlock = BigInt(deployment.deploymentBlock);
 createRoot(document.getElementById('root')).render(<GameHost definition={definition} frameUrl="./game.html" deployment={deployment}/>);`,
@@ -152,7 +159,7 @@ createRoot(document.getElementById('root')).render(<GameSession definition={defi
     } });
     await Promise.all([host.rebuild(), child.rebuild()]);
     // Separate styles keep the game document full-size inside its single SDK frame.
-    await writeFile(path.join(outdir, 'layout.css'), '*{box-sizing:border-box}html,body{margin:0;font-family:ui-monospace,monospace;background:#eee}#root{max-width:960px;margin:auto}');
+    await writeFile(path.join(outdir, 'layout.css'), '*{box-sizing:border-box}html,body{margin:0;font-family:ui-monospace,monospace;background:#eee}#root{max-width:var(--rf-game-max-width,960px);margin:auto}');
     await writeFile(path.join(outdir, 'game-layout.css'), '*{box-sizing:border-box}html,body,#root{width:100%;height:100%;margin:0;overflow:hidden;font-family:ui-monospace,monospace}');
     await writeFile(path.join(outdir, 'index.html'), html('runtime', definition.name).replace('</head>', '<link rel="stylesheet" href="./layout.css"></head>'));
     await writeFile(path.join(outdir, 'game.html'), html('game', definition.name, true).replace('</head>', '<link rel="stylesheet" href="./game-layout.css"></head>'));

@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { formatGameAmount } from "./experience-ui.js";
 
-/** One viewport for every game. The host owns its boundary and account controls. */
+/** Reference viewport dimensions; hosts may choose another layout through frame.css. */
 export const GAME_VIEWPORT = Object.freeze({ width: 960, height: 640 });
 export type GameFriend = Readonly<{ id: bigint; label: string; walletAddress?: string; kind: "owned" | "sample" }>;
 export type GameWalletState = Readonly<{ balance?: bigint; status?: "ready" | "loading" | "error"; error?: string }>;
@@ -55,7 +55,7 @@ export function GameFrame({ children, friends, selectedFriendId, onSelectFriend,
   const selecting = selectionMode === "picker" && (!friend || menu === "friends");
   const menuOpen = selecting || menu === "wallet" || Boolean(confirmation);
   useEffect(() => { onMenuChange?.(menuOpen); }, [menuOpen, onMenuChange]);
-  return <section className="rf-game-frame" aria-label="Game container" data-mode={mode} style={{ aspectRatio: `${GAME_VIEWPORT.width} / ${GAME_VIEWPORT.height}` }}>
+  return <section className="rf-game-frame" aria-label="Game container" data-mode={mode}>
     <div className="rf-frame-chrome" inert={menuOpen || undefined}>
       <div className="rf-frame-toolbar">
         <span className="rf-frame-mode">{mode === "preview" ? "Local preview" : "Live · Robinhood"}</span>
