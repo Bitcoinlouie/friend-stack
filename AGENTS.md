@@ -21,6 +21,10 @@ palette and camera to suit the requested game; the supplied scenery, world
 presets and renderer are optional. Keep SDK reference content in
 `examples/` or `games/`; consuming projects keep their components in that project.
 
+The optional renderer's 576 × 384 plane is not a platform limit. Custom cameras,
+scrolling maps and worlds of any size are allowed; the 960 × 640 container is the
+viewport. See `examples/scrolling-world` for a larger-world reference.
+
 ## Use the package runtime
 
 The game directory contains `index.tsx`, `game.json` and assets. Default-export a
@@ -70,8 +74,9 @@ simulations before wallet prompts. Retain account/network/session cancellation
 and receipt verification. Inventory and rewards belong to the canonical NFT
 wallet, not a substituted owner address.
 
-Internal automated tests may use mock accounts and sample Friends. They are test
-fixtures, not deliverable prototypes. Verify the real ownership gate before
+Automated tests may use mock accounts and sample Friends through
+`npx friendsdk test <game-directory>` or `@rarefriends/friendsdk/testing`. They are
+test fixtures, not deliverable prototypes. Verify the real ownership gate before
 delivering a playable prototype. Wallet connection and ownership reads require
 no private key or signing transaction.
 

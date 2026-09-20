@@ -1,10 +1,14 @@
 # Game runtime and capabilities
 
-FriendSDK **v0.1** runs a game component in a **960 × 640** container. The package
+FriendSDK **v0.1.1** runs a game component in a **960 × 640** container. The package
 provides wallet connection, owned Friend selection, fresh eligibility checks,
 a sandbox, simulated RF state by default and in-frame confirmations. An explicit
 deployment enables live contract actions. Build the component and
 assets in the user's current project directory.
+
+The container is the viewing window, not the size of the world. The optional
+renderer uses a 576 × 384 plane; custom cameras, scrolling maps and worlds of any
+size are allowed. See [the larger-world example](examples/scrolling-world).
 
 ## Run a component
 
@@ -43,10 +47,10 @@ npm ci
 npm pack
 ```
 
-Copy `rarefriends-friendsdk-0.1.0.tgz` into the current project directory and run:
+Copy `rarefriends-friendsdk-0.1.1.tgz` into the current project directory and run:
 
 ```sh
-npm install ./rarefriends-friendsdk-0.1.0.tgz react react-dom
+npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom
 npx friendsdk init ./games/my-game
 npx friendsdk dev ./games/my-game
 ```
@@ -64,9 +68,16 @@ included only when explicitly requested.
 | `npx friendsdk init ./games/my-game` | Creates a game directory from the generic starter. |
 | `npx friendsdk dev ./games/my-game` | Builds, watches source files and serves the component locally. Refresh the browser after edits. |
 | `npx friendsdk build ./games/my-game` | Writes the game bundle and runtime documents to the game's `.friendsdk/` directory. Add `--outdir ./build/my-game` to choose another output. |
+| `npx friendsdk check ./games/my-game` | Validates the game definition, imports and sandbox boundaries. |
+| `npx friendsdk test ./games/my-game` | Runs a headless browser smoke check using mock wallet/RPC/sprites. Add `--screenshot ./artifacts/game.png` or `--width 360`. Requires Playwright and Chromium. |
 
 `.friendsdk/` contains generated output. Edit `index.tsx`, `game.json` and assets,
 then rebuild; exclude generated output from source control.
+
+Use `friendsdk --help` for options. Supported Node imports are
+`@rarefriends/friendsdk/build`, `/serve` and `/testing`; see
+[tooling and custom test callbacks](API.md#node-tooling). No relative imports into
+the installed package are needed.
 
 ## Fishing commands
 
@@ -196,7 +207,8 @@ new verification. Resolve the canonical NFT wallet once for that selected
 session. Contracts enforce ownership and eligibility for live writes; local
 account/network/session checks cancel invalidated actions, and receipts verify
 completed writes. Child reload cancels the old session before a new handshake.
-Mock identities are limited to internal automated tests.
+Mock identities are limited to automated tests, including the exported
+`testGame` harness. Normal `dev` and `build` output retain the real ownership gate.
 
 The child receives a selected Friend ID, fixed action client and pause state.
 `client.mode` and snapshots identify `"preview"` or `"chain"`. Wallet providers and public clients stay in the trusted runtime. Connection
@@ -216,6 +228,13 @@ For a custom mount, serve the same child files under the configured `frameUrl`.
 The iframe uses `sandbox="allow-scripts"` without same-origin, popup, form or
 navigation permissions.
 
+The opaque sandbox cannot use `localStorage` or IndexedDB. The bridge has no save
+API, and simulated ledgers are session-local; a reload starts fresh. The frame's
+toolbar overlays the bottom-left and menu button overlays the bottom-right, so
+leave space for those controls when placing HUD elements. Its 3:2 aspect ratio
+makes a 360-pixel-wide frame about 240 pixels tall; check text and touch targets
+at that size. See [practical details](README.md#larger-worlds-and-practical-details).
+
 Only the exact child window receives a private `MessagePort`; the child accepts
 initialization from its parent. The bridge exposes `read`, `canBuy`, `buy`, `play`,
 `settle` and `redeem`, with action quantities 1–99. The runtime obtains in-frame
@@ -226,15 +245,16 @@ deployment or bankroll withdrawals.
 
 ## Capabilities
 
-| Capability | Implemented in SDK v0.1 | Limits or future work |
+| Capability | Implemented in SDK v0.1.1 | Limits or future work |
 | --- | --- | --- |
 | Generic game runtime | Directory runner, `GameHost`, `ConnectedGameHost`, `GameSession`, one 960 × 640 frame and sandbox bridge. | The game supplies its world, activities, assets and definition. |
 | Wallet connection | EIP-6963/injected EIP-1193 browser wallets and account/network lifecycle. | WalletConnect and native-wallet deep links are not supplied. Connection grants no transaction permission. |
 | Owned Friend discovery | Account-filtered incoming/outgoing `Transfer` reads; current ownership, generation and canonical wallet checks. | RPC must supply complete filtered history. There is no collection-scan fallback. |
 | Prototype eligibility | Fresh `readGenerationEligibility` before play; account ownership and generation ≥ 1 required. | Discovery/artwork alone is insufficient. Identity changes require rechecking. |
-| Optional world tools | `GameWorld`, world presets, scenery, movement and collision utilities. | Creators may supply their own assets, rendering, visual style and camera. |
+| Optional world tools | `GameWorld`, world presets, scenery, movement and collision utilities; scrolling-world example. | Creators may supply their own assets, rendering, visual style and camera. The viewport does not limit world dimensions. |
+| Build and test tools | CLI init/dev/build/check/test and supported Node build/serve/testing imports. | Headless mock tests require Playwright; playable previews require a real eligible wallet. |
 | Game UI and characters | Canonical Friend sprites, SDK menus, HUD, inventory panels, reveals, sound and reduced motion. | Preserve canonical Friend artwork, keyboard/touch controls and accessibility; keep menus and actions inside the frame. |
-| Simulated actions | `read`, `canBuy`, `buy`, `play`, `settle`, `redeem`; RF balances, consumables, rewards and reservation accounting. | Preview state is session-local and does not persist on-chain. |
+| Simulated actions | `read`, `canBuy`, `buy`, `play`, `settle`, `redeem`; RF balances, consumables, rewards and reservation accounting. | Preview state is session-local and resets on reload. No save bridge is supplied. |
 | Consumable mechanics | One configured consumable with a fixed weighted outcome table and exact RF values. | Multiple consumable tiers and arbitrary pack/NFT minting APIs are not implemented. |
 | Vendor redemption | Fixed-value redemption, kept-reward backing and no expiry. | Player-to-player trading is not implemented. |
 | Live contract actions | `createLiveGameClient` and the bridge support buy/play/settle/redeem; exact RF approval, a selected canonical wallet, contract-enforced ownership and receipt/event verification. | Requires an explicit deployment, owning wallet, RF and ETH gas. |
@@ -261,6 +281,17 @@ its maximum prize; pending plays and kept rewards cannot share backing. See
 for later-phase transport and accounting requirements.
 
 ## Checks
+
+For a consuming project, install Playwright and Chromium once, then run a focused
+check against your own game:
+
+```sh
+npx friendsdk check ./games/my-game
+npx friendsdk test ./games/my-game --screenshot ./artifacts/game.png
+```
+
+The harness uses mocks in an automated browser and cleans up afterward. It does
+not produce a playable mock build. For SDK changes, use the relevant checks:
 
 ```sh
 npm test

@@ -1,4 +1,4 @@
-# FriendSDK v0.1
+# FriendSDK v0.1.1
 
 Build a playable Rare Friends game with your AI coding agent. You create the
 world, activities and game rules; the SDK supplies wallet connection, owned
@@ -8,6 +8,11 @@ game container. Purchases and rewards are simulated by default.
 Start in this repository or install the package in your current project. The SDK
 includes the runtime, optional world assets and examples to get started. Choose
 the world's artwork and visual style to suit your game.
+
+**World size is yours to choose.** The 576 × 384 plane belongs to the optional
+renderer; custom cameras and worlds of any size are allowed. The 960 × 640
+container is the viewing window, not a world boundary. See the
+[scrolling-world example](examples/scrolling-world) for a larger map and camera.
 
 ## What you need
 
@@ -51,7 +56,7 @@ git --version
 
 ### Windows
 
-Use **Ubuntu in WSL2** for the v0.1 workflow. Open PowerShell as Administrator:
+Use **Ubuntu in WSL2** for this workflow. Open PowerShell as Administrator:
 
 ```powershell
 wsl --install -d Ubuntu
@@ -120,7 +125,7 @@ The commands to create and run your own copy of the starter are:
 
 ```sh
 npm run build
-node scripts/dev-game.mjs init games/my-game
+npx friendsdk init games/my-game
 npm run dev:game -- games/my-game
 ```
 
@@ -155,6 +160,24 @@ loading and error states.
 Use existing wallet and Friend context through `ConnectedGameHost` when supplied
 by the current project; see [the runtime guide](HOST_INTEGRATION.md).
 
+### Larger worlds and practical details
+
+Run `npm run dev:game -- examples/scrolling-world` to try a larger world inside
+the same frame. Custom cameras, scrolling maps and connected rooms are allowed;
+choose a world size that performs well on your target devices. The optional
+`GameWorld` renderer's fixed camera is one starting point, not a platform limit.
+
+- **Toolbar:** the runtime overlays wallet/Friend controls at the bottom-left
+  and a menu button at the bottom-right. Place important HUD controls clear of
+  them and check on a phone-sized viewport.
+- **Small screens:** the frame keeps its 3:2 aspect ratio. At 360 pixels wide it
+  is about 240 pixels tall; make text and touch targets readable at that size.
+- **Storage:** the sandbox has no `localStorage` or IndexedDB access and the
+  bridge has no save API. Simulated balances and inventory last for the runtime
+  session; reloading starts a new session. Persistent progress is not supplied.
+- **Input:** transform pointer coordinates through your camera and display
+  scale, and pause movement when the runtime opens a menu.
+
 ## Try the fishing example
 
 Fishing is a complete example with a bait vendor, lake, catches and fixed-price
@@ -185,7 +208,8 @@ Build your component from the SDK root:
 
 ```sh
 npm run build
-node scripts/dev-game.mjs build games/my-game
+npx friendsdk build games/my-game
+npx friendsdk check games/my-game
 ```
 
 The output is `games/my-game/.friendsdk/`. Use that folder as your static site's
@@ -212,19 +236,48 @@ npm ci
 npm pack
 ```
 
-The **v0.1** release uses npm version **0.1.0**. Copy
-`rarefriends-friendsdk-0.1.0.tgz` into your existing project, then run there:
+This **v0.1.1** update uses npm version **0.1.1**. Copy
+`rarefriends-friendsdk-0.1.1.tgz` into your existing project, then run there:
 
 ```sh
-npm install ./rarefriends-friendsdk-0.1.0.tgz react react-dom
+npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom
 npx friendsdk init ./games/my-game
 npx friendsdk dev ./games/my-game
 ```
 
-Build with `npx friendsdk build ./games/my-game`. The package supplies the runner
-and runtime; your agent works in your current project. For an existing React
+Build with `npx friendsdk build ./games/my-game`, then validate with
+`npx friendsdk check ./games/my-game`. The package supplies the runner and
+runtime; your agent works in your current project. Node tooling has supported
+`@rarefriends/friendsdk/build`, `/serve` and `/testing` imports; no relative
+imports into `node_modules` are needed. See [tooling APIs](API.md#node-tooling).
+For an existing React
 mount, use `GameHost` or `ConnectedGameHost` from
 `@rarefriends/friendsdk/runtime`. See [runtime integration](HOST_INTEGRATION.md).
+
+The archive is the current distribution route; these instructions do not assume
+an npm registry release. Source code uses [Apache-2.0](LICENSE); artwork
+permissions are separate. See [NOTICE.md](NOTICE.md).
+
+### Check your game without a wallet
+
+The automated browser harness works with any game directory. It provides a mock
+wallet, mock Robinhood RPC reads and sample canonical sprites, runs the normal
+runtime and captures browser errors. Install its optional browser dependency once:
+
+```sh
+npm install -D playwright
+npx playwright install chromium
+npx friendsdk test ./games/my-game --screenshot ./artifacts/game.png
+```
+
+On Linux, use `npx playwright install --with-deps chromium` if system libraries
+are missing. Add `--width 360` to check a phone-sized frame. The test builds into
+a temporary directory and closes its browser/server when finished. Add a focused
+interaction check with the exported [test helper](API.md#automated-game-tests).
+
+Mocks are for automated tests only. `dev` and `build` still require a connected
+wallet owning an eligible Friend on Robinhood before play. A passing mock test
+does not verify real ownership reads or replace a real-wallet playtest.
 
 ## Optional contract development
 
@@ -254,7 +307,9 @@ covers that connection, deployment resume and terminal play.
 
 ## Verify and submit
 
-Ask your agent to run these checks from the SDK root:
+For a game, build it, run `friendsdk check` and `friendsdk test` as above, and
+check its keyboard/touch interactions. For SDK changes, run the relevant tests
+and checks from the SDK root:
 
 ```sh
 npm test
@@ -269,7 +324,7 @@ package installation. Foundry is optional for the SDK checks: local contract
 integration tests report a skip when its tools are unavailable. For contract
 changes, also run the checks in the [contract guide](contracts/README.md).
 
-Submit the game source and assets, run instructions, SDK version **v0.1** and
+Submit the game source and assets, run instructions, SDK version **v0.1.1** and
 exact costs, outcome weights, rewards and consumable rules. RF uses bigint base
 units (`1 RF = 10n ** 18n`). Each purchased consumable reserves its maximum prize;
 kept rewards retain their RF backing with no redemption expiry. Label simulated
@@ -293,5 +348,5 @@ publication. Automated checks do not deploy or publish games.
 | [Contracts](contracts/README.md) | Optional contract deployment and developer tooling |
 | [Oracle operations](docs/oracle/README.md) | RNG delivery, pending plays and proposed recovery work |
 
-Trading, creator fees and wearable NFTs are not implemented in v0.1. See the
+Trading, creator fees and wearable NFTs are not implemented in v0.1.1. See the
 [capability list](HOST_INTEGRATION.md#capabilities) for the full supported scope.
