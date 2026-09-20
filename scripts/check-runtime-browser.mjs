@@ -23,19 +23,24 @@ const ABI = parseAbi([
 const ownerId = owner => owner.toLowerCase() === OWNER.toLowerCase() ? 7730n : 3412n;
 const tokenOwner = id => id === 7730n ? OWNER : SECOND_OWNER;
 
-export async function installFixture(page, origin, { artworkCall } = {}) {
+export async function installFixture(page, origin, { artworkCall, initialChain = "0x1237" } = {}) {
   const state = { mode: "eligible", requests: [], ownerReads: 0, hold: null, release: null };
-  await page.addInitScript(({ owner }) => {
+  await page.addInitScript(({ owner, initialChain }) => {
     // Internal automation is the only place an account/identity may be mocked.
     const listeners = new Map();
-    const state = { accounts: [], chainId: "0x1237", requests: [] };
+    const state = { accounts: [], chainId: initialChain, requests: [], switchError: null };
     const emit = (event, value) => { for (const listener of listeners.get(event) ?? []) listener(value); };
     window.ethereum = {
-      async request({ method }) {
+      async request({ method, params }) {
         state.requests.push(method);
         if (method === "eth_accounts") return state.accounts;
         if (method === "eth_requestAccounts") { state.accounts = [owner]; return state.accounts; }
         if (method === "eth_chainId") return state.chainId;
+        if (method === "wallet_switchEthereumChain") {
+          if (state.switchError) throw { code: state.switchError };
+          if (params[0].chainId !== "0x1237") throw new Error("Switch only to Robinhood");
+          state.chainId = params[0].chainId; emit("chainChanged", state.chainId); return null;
+        }
         throw new Error(`Unexpected signing or wallet method: ${method}`);
       },
       on(event, listener) { if (!listeners.has(event)) listeners.set(event, new Set()); listeners.get(event).add(listener); },
@@ -49,7 +54,7 @@ export async function installFixture(page, origin, { artworkCall } = {}) {
     };
     const random = crypto.getRandomValues.bind(crypto);
     crypto.getRandomValues = array => array instanceof Uint32Array && array.length === 1 ? (array[0] = 1500, array) : random(array);
-  }, { owner: OWNER });
+  }, { owner: OWNER, initialChain });
 
   async function answer(request) {
     state.requests.push(request);
@@ -142,12 +147,19 @@ try {
   const origin = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ headless: true });
 
+  const missingWallet = await browser.newPage();
+  await missingWallet.goto(origin);
+  await missingWallet.getByText("No browser wallet found. Enable your wallet extension or open this game in your wallet’s browser.", { exact: true }).waitFor();
+  assert.equal(await missingWallet.getByText("No playable Friends found.", { exact: true }).count(), 0);
+  assert.equal(await missingWallet.locator("iframe").count(), 0);
+  await missingWallet.close();
+
   for (const width of [1100, 360]) {
     const context = await browser.newContext({ viewport: { width, height: 800 }, reducedMotion: "reduce", hasTouch: width < 500 });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
-    const fixture = await installFixture(page, origin);
+    const fixture = await installFixture(page, origin, { initialChain: "0x1" });
     const child = () => page.frameLocator("iframe");
     const hostButton = name => page.getByRole("button", { name: name === "Connect wallet" ? /^Connect (wallet|Browser wallet)$/ : name, exact: true });
     const gameButton = name => child().getByRole("button", { name, exact: true });
@@ -155,11 +167,22 @@ try {
     const chooseFriend = id => page.getByRole("button", { name: new RegExp(`^Friend #${id}\\b`) }).click();
     await page.goto(origin);
     await hostButton("Connect wallet").waitFor();
+    await page.getByText("Connect your wallet to find your Friends on Robinhood.", { exact: true }).waitFor();
+    assert.equal(await page.getByText("No playable Friends found.", { exact: true }).count(), 0);
     assert.equal(await page.locator("iframe").count(), 0, "No child before a wallet and eligible NFT");
     assert.equal(await page.evaluate(() => window.__friendWalletTest.state.requests.includes("eth_requestAccounts")), false);
     assert.equal(fixture.requests.length, 0, "No owned NFT requests before connection");
     await assertBounds(page);
     await hostButton("Connect wallet").click();
+    await hostButton("Switch to Robinhood").waitFor();
+    assert.equal(fixture.requests.length, 0, "No discovery on Ethereum");
+    assert.equal(await page.getByText("No playable Friends found.", { exact: true }).count(), 0);
+    await page.evaluate(() => { window.__friendWalletTest.state.switchError = 4001; });
+    await hostButton("Switch to Robinhood").click();
+    await page.getByText("Network switch declined. Try again when ready.", { exact: true }).waitFor();
+    assert.equal(await page.locator("iframe").count(), 0);
+    await page.evaluate(() => { window.__friendWalletTest.state.switchError = null; });
+    await hostButton("Switch to Robinhood").click();
     await page.getByRole("button", { name: /^Friend #7730\b/ }).waitFor();
     if (width === 1100) {
       fixture.hold = new Promise(resolve => { fixture.release = resolve; });
@@ -214,13 +237,13 @@ try {
     await page.locator("iframe").waitFor({ state: "detached" });
     await page.getByText(/4663/).waitFor();
     await assertBounds(page);
-    await page.evaluate(() => window.__friendWalletTest.chain("0x1237"));
+    await hostButton("Switch to Robinhood").click();
     await chooseFriend(3412);
     await loaded();
     await page.evaluate(() => window.__friendWalletTest.disconnect());
     await page.locator("iframe").waitFor({ state: "detached" });
     await hostButton("Connect wallet").waitFor();
-    assert((await page.evaluate(() => window.__friendWalletTest.state.requests)).every(method => ["eth_accounts", "eth_requestAccounts", "eth_chainId"].includes(method)));
+    assert((await page.evaluate(() => window.__friendWalletTest.state.requests)).every(method => ["eth_accounts", "eth_requestAccounts", "eth_chainId", "wallet_switchEthereumChain"].includes(method)));
     assert.deepEqual(errors, []);
     await context.close();
     console.log(`PASS public runtime ${width}px: connection, owner-indexed discovery, fresh gate, sandbox, simulated purchase, account/network/disconnect cancellation, container bounds.`);
@@ -228,18 +251,26 @@ try {
 
   for (const mode of ["unowned", "unhardwired", "owner-changed", "rpc-error"]) {
     const page = await browser.newPage();
-    const fixture = await installFixture(page, origin);
+    const fixture = await installFixture(page, origin, { initialChain: "0x1" });
     fixture.mode = mode;
     await page.goto(origin);
     await page.getByRole("button", { name: /^Connect (wallet|Browser wallet)$/ }).click();
+    await page.getByRole("button", { name: "Switch to Robinhood", exact: true }).click();
     if (mode === "owner-changed") {
       await page.getByRole("button", { name: /^Friend #7730\b/ }).click();
       await page.getByRole("button", { name: "Retry eligibility", exact: true }).waitFor();
     } else {
-      await page.getByRole("button", { name: "Refresh Friends", exact: true }).waitFor();
+      await page.getByRole("button", { name: /^(Refresh Friends|Retry loading Friends)$/ }).waitFor();
       // Wait for a terminal state after wallet connection, not the initial empty picker.
       if (mode === "rpc-error") await page.getByRole("alert").filter({ hasText: /Fixture RPC unavailable|could not/i }).waitFor({ timeout: 20_000 });
-      else await page.getByText("No playable Friends found.", { exact: true }).waitFor();
+      else if (mode === "unhardwired") await page.getByText("1 Friend hidden: not hardwired (generation 0). Playing requires generation 1 or higher.", { exact: true }).waitFor();
+      else await page.getByText("No Rare Friends Generations NFTs found in this wallet on Robinhood.", { exact: true }).waitFor();
+      assert.equal(await page.getByText("No playable Friends found.", { exact: true }).count(), 0);
+      if (mode === "rpc-error") {
+        fixture.mode = "eligible";
+        await page.getByRole("button", { name: "Retry loading Friends", exact: true }).click();
+        await page.getByRole("button", { name: /^Friend #7730\b/ }).waitFor();
+      }
     }
     assert.equal(await page.locator("iframe").count(), 0, `No playable game for ${mode}`);
     await assertBounds(page);

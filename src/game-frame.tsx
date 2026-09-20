@@ -14,6 +14,9 @@ export type GameConfirmation = Readonly<{
 export type GameFrameProps = {
   children: ReactNode; friends: readonly GameFriend[]; selectedFriendId: bigint | null;
   onSelectFriend?: (id: bigint) => void; friendsLoading?: boolean; friendsError?: string;
+  /** Only show the empty result after successful discovery; null suppresses it. */
+  friendsEmptyMessage?: string | null;
+  friendsHiddenCount?: number;
   /** Use host when the surrounding interface already owns selection and connection. */
   selectionMode?: "picker" | "host";
   onConnect?: () => void; wallet?: GameWalletState; confirmation?: GameConfirmation | null;
@@ -46,7 +49,7 @@ export function GameMenu({ title, onClose, children, footer }: { title: string; 
   </div></div>;
 }
 
-export function GameFrame({ children, friends, selectedFriendId, onSelectFriend, friendsLoading, friendsError, onConnect, wallet, confirmation, connection, walletActions, selectionMode = "picker", mode, onMenuChange }: GameFrameProps) {
+export function GameFrame({ children, friends, selectedFriendId, onSelectFriend, friendsLoading, friendsError, friendsEmptyMessage = "No playable Friends found.", friendsHiddenCount = 0, onConnect, wallet, confirmation, connection, walletActions, selectionMode = "picker", mode, onMenuChange }: GameFrameProps) {
   const [menu, setMenu] = useState<"friends" | "wallet" | null>(null);
   const friend = friends.find(value => value.id === selectedFriendId);
   const selecting = selectionMode === "picker" && (!friend || menu === "friends");
@@ -74,7 +77,8 @@ export function GameFrame({ children, friends, selectedFriendId, onSelectFriend,
       {friendsLoading && <p role="status">Loading your Friends…</p>}
       {friendsError && <p role="alert">{friendsError}</p>}
       <div className="rf-frame-friends">{friends.map(value => <button type="button" key={value.id.toString()} aria-pressed={value.id === selectedFriendId} onClick={() => { onSelectFriend?.(value.id); setMenu(null); }}><strong>{value.label}</strong><small>{value.kind === "sample" ? "Sample · no ownership claim" : "Hardwired Generations"}</small></button>)}</div>
-      {!friendsLoading && !friends.length && <p>No playable Friends found.</p>}
+      {!friendsLoading && !friendsError && friendsHiddenCount > 0 && <p>{friendsHiddenCount} {friendsHiddenCount === 1 ? "Friend" : "Friends"} hidden: not hardwired (generation 0). Playing requires generation 1 or higher.</p>}
+      {!friendsLoading && !friendsError && !friends.length && friendsEmptyMessage && <p>{friendsEmptyMessage}</p>}
       {onConnect && <button type="button" className="rf-frame-primary" onClick={onConnect}>Connect wallet</button>}
     </GameMenu> : menu === "wallet" ? <GameMenu title="Friend wallet" onClose={() => setMenu(null)}>
       <h3>{friend?.label}</h3><p>{mode === "preview" ? "Preview balance. RF is simulated and no transactions are sent." : "Items and RF belong to this Friend’s canonical wallet."}</p>

@@ -128,7 +128,8 @@ before mounting the child. Account, network and Friend changes cancel pending
 confirmations, close stale bridges and trigger a fresh check. Errors or missing
 identity inputs cannot fall back to sample play. Internal tests may use mocks.
 
-Advanced discovery with `readOwnedFriends` returns `{ friends, blockNumber }`.
+Advanced discovery with `readOwnedFriends` returns `{ friends, blockNumber, hiddenCount }`.
+`hiddenCount` reports owned generation-0 Friends excluded from the playable list.
 It reads the account's balance at a fresh block and queries `Transfer` logs
 filtered by `to` and `from` account. It reconstructs currently held IDs and checks
 owner, generation and canonical wallet at the same block. It does not scan every
@@ -138,11 +139,16 @@ Options accept a deployment and abort signal.
 
 `createFriendWalletSession({ provider?, target? })` supports EIP-6963 discovery
 and injected EIP-1193 wallets. A supplied provider reuses existing wallet context.
-The session exposes `getSnapshot`, `subscribe`, `connect(walletId?)`, `refresh`,
+The session exposes `getSnapshot`, `subscribe`, `connect(walletId?)`, `switchNetwork`, `refresh`,
 `disconnect`, `getProvider` and `dispose`. Discovery/restoration uses read-only requests;
 `connect` requests accounts from a user gesture. Identity revisions invalidate
 stale reads when the provider, account or chain changes. `disconnect` forgets the
-local session. These APIs do not sign, deploy, switch chains or spend.
+local session. `switchNetwork()` requests Robinhood mainnet from a user gesture,
+adding the official network configuration if the wallet reports an unknown chain.
+The runtime shows a pending state, handles declined requests, and rechecks the
+connection before loading Friends. These APIs do not sign, deploy or spend.
+The picker distinguishes missing wallets, disconnected accounts, wrong networks,
+failed discovery and successful empty results, and explains hidden generation-0 Friends.
 
 `createFriendPublicClient({ rpcUrl? })` uses the package's public RPC by default.
 No private API key or signer is required for wallet/ownership reads. Keep wallet

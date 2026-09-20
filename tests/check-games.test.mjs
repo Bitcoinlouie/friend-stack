@@ -18,7 +18,7 @@ test('game validation accepts SDK CSS exports but rejects unrelated sources and 
     for (const directory of ['dist', 'node_modules']) {
       await symlink(join(sdk, directory), join(root, directory), 'dir');
     }
-    for (const directory of ['examples/fishing', 'games/probe']) {
+    for (const directory of ['examples/starter', 'examples/fishing', 'games/probe']) {
       await mkdir(join(root, directory), { recursive: true });
       await copyFile(join(sdk, 'examples/fishing/game.json'), join(root, directory, 'game.json'));
       await writeFile(join(root, directory, 'README.md'), 'Internal validation fixture.');
@@ -42,7 +42,7 @@ import '@rarefriends/friendsdk/frame.css';`);
 
     await writeFile(entry, 'import "@rarefriends/friendsdk/host";');
     assert.throws(run, error => {
-      assert.match(error.stderr, /Wallet transport belongs to .*host, not game code/);
+      assert.match(error.stderr, /Wallet transport belongs to the SDK runtime, not game code/);
       return true;
     });
   } finally {

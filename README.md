@@ -85,9 +85,16 @@ If you downloaded a ZIP, extract it and open a terminal in the folder containing
 `package.json`; start with `npm ci`.
 
 Open the displayed URL, normally `http://localhost:4173`. Choose **Connect
-wallet**, select your owned Friend, and enter the garden. Move with WASD, arrow
+wallet**. If your wallet is on Ethereum or another network, choose **Switch to
+Robinhood** and approve the network change in your wallet. The runtime can add
+Robinhood mainnet if needed, using the [official network settings](https://docs.robinhood.com/chain/connecting/).
+Then select your owned Friend and enter the garden. Move with WASD, arrow
 keys or a tap/click destination. Walk to the pack dispenser to buy a simulated
 pack, then to the opening station to reveal it.
+
+The picker explains missing wallets and connection or discovery failures, with
+retry controls. It reports generation-0 Friends as hidden because play requires
+a hardwired Friend (generation 1 or higher).
 
 Keep the terminal running while you play. Source changes rebuild automatically;
 refresh the browser to see them. Press **Ctrl+C** to stop the server.
