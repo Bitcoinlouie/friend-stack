@@ -1,7 +1,7 @@
 {
   "name": "@rarefriends/friendsdk",
-  "version": "0.1.1",
-  "description": "Rare Friends game building blocks and v0.1 chance-game reference",
+  "version": "0.1.2",
+  "description": "Rare Friends game building blocks and chance-game reference",
   "type": "module",
   "license": "Apache-2.0",
   "engines": {

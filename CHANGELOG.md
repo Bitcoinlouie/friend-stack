@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2
 
 - Welcomed durable items, cosmetics, perks, upgrades and additional currencies
   backed by or integrated with $RAREFRIENDS, with the NFT ownership gate retained.

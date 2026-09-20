@@ -1,6 +1,6 @@
 # FriendSDK API
 
-SDK **v0.1.1** exports browser ESM and TypeScript declarations. Import modules from
+SDK **v0.1.2** exports browser ESM and TypeScript declarations. Import modules from
 `@rarefriends/friendsdk/<module>`. Build with Node.js 22+ using `npm ci` and
 `npm run build`.
 
@@ -78,13 +78,11 @@ totaling 10,000 basis points and at least one positive prize. Do not present
 unused reference terms as mechanics your game implements.
 
 The default **960 × 640** frame and SDK menus are reference presentation. The
-checkout's host stylesheet supports `--rf-game-max-width` (default `960px`) and
+host stylesheet supports `--rf-game-max-width` (default `960px`) and
 `--rf-game-aspect-ratio` (default `3 / 2`). Set them on the trusted wrapper around
 the runtime, or in the CLI game's optional `host.css`; child styles cannot resize
 the host. Customize game menus as needed while keeping trusted wallet and action
 confirmations in the runtime. See [layout examples](HOST_INTEGRATION.md#react-runtime).
-These layout options are not in the published v0.1.1 archive; build from this
-checkout to use them.
 
 ## Modules
 
@@ -422,7 +420,7 @@ and proposed recovery work.
 
 ## Unsupported actions
 
-SDK v0.1.1 has no trading, listing, bidding, swap, creator-fee/revenue-share, wearable
+SDK v0.1.2 has no trading, listing, bidding, swap, creator-fee/revenue-share, wearable
 NFT, upgrade, additional-currency or persistence APIs. Fixed-price vendor
 redemption is the sale model supplied by the chance-game client. These are
 implementation limits, not a ban on those ideas; document the custom integration

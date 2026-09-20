@@ -1,4 +1,4 @@
-# FriendSDK v0.1.1
+# FriendSDK v0.1.2
 
 Build a playable Rare Friends game with your AI coding agent. You create the
 experience and game rules; the SDK supplies wallet connection, owned Friend
@@ -197,10 +197,7 @@ choose a world size that performs well on your target devices. The optional
 `GameWorld` renderer's fixed camera is one starting point, not a platform limit.
 
 The **960 × 640** layout and SDK menus are references, not fixed presentation
-requirements. The layout options below are available in this checkout; build
-an archive with `npm pack` to use them in another project. The published v0.1.1
-archive predates these options. For a wider CLI game, add a `host.css` file in
-its game directory:
+requirements. For a wider CLI game, add a `host.css` file in its game directory:
 
 ```css
 :root {
@@ -301,12 +298,12 @@ also needs [LAN networking configuration](https://learn.microsoft.com/en-us/wind
 
 ## Install in an existing project
 
-Download `rarefriends-friendsdk-0.1.1.tgz` from the
-[v0.1.1 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.1)
+Download `rarefriends-friendsdk-0.1.2.tgz` from the
+[v0.1.2 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.2)
 into your existing project, then run there:
 
 ```sh
-npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom
+npm install ./rarefriends-friendsdk-0.1.2.tgz react react-dom
 npx friendsdk init ./games/my-game
 npx friendsdk dev ./games/my-game
 ```
@@ -407,7 +404,7 @@ For vibeathon game submissions, include a **public playable preview URL** in the
 submission README and PR description, with the required wallet/network and
 controls. GitHub Pages is an allowed host; use the steps above.
 
-Submit the game source and assets, run instructions, SDK version **v0.1.1** and
+Submit the game source and assets, run instructions, SDK version **v0.1.2** and
 exact costs and rules for its items, rewards, upgrades and currencies. Include
 outcome weights and consumable rules when using the supplied chance game. RF uses
 bigint base units (`1 RF = 10n ** 18n`). In that chance game, each purchased
@@ -435,5 +432,5 @@ may host submission previews themselves or through their own Pages workflow.
 | [Contracts](contracts/README.md) | Optional contract deployment and developer tooling |
 | [Oracle operations](docs/oracle/README.md) | RNG delivery, pending plays and proposed recovery work |
 
-Trading, creator fees and wearable NFTs are not implemented in v0.1.1. See the
+Trading, creator fees and wearable NFTs are not implemented in v0.1.2. See the
 [capability list](HOST_INTEGRATION.md#capabilities) for the full supported scope.

@@ -1,6 +1,6 @@
 # Game runtime and capabilities
 
-FriendSDK **v0.1.1** runs a game component in a sandboxed container with a
+FriendSDK **v0.1.2** runs a game component in a sandboxed container with a
 customizable **960 × 640** reference layout. The package
 provides wallet connection, owned Friend selection, fresh eligibility checks,
 a sandbox, simulated RF state by default and in-frame confirmations. An explicit
@@ -45,13 +45,13 @@ npm run dev:game -- examples/starter
 
 Run another game with `npm run dev:game -- games/my-game`.
 
-To install in an existing project, download `rarefriends-friendsdk-0.1.1.tgz`
-from the [v0.1.1 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.1).
+To install in an existing project, download `rarefriends-friendsdk-0.1.2.tgz`
+from the [v0.1.2 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.2).
 You can also build the archive from an SDK checkout with `npm ci` and `npm pack`.
 Put the archive in the current project directory and run:
 
 ```sh
-npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom
+npm install ./rarefriends-friendsdk-0.1.2.tgz react react-dom
 npx friendsdk init ./games/my-game
 npx friendsdk dev ./games/my-game
 ```
@@ -206,8 +206,7 @@ economy actions are used; its schema requires a positive price, weights totaling
 terms as such rather than advertising them as game mechanics.
 
 The container size and SDK game menus are customizable references. For a wider
-CLI layout, create `host.css` in the game directory. These layout options are
-available from this checkout, not the published v0.1.1 archive:
+CLI layout, create `host.css` in the game directory:
 
 ```css
 :root {
@@ -293,7 +292,7 @@ The current client implements the supplied
 chance-game economy; other mechanics may need custom integration. Missing APIs
 below describe implementation work, not restrictions on submission ideas.
 
-| Capability | Implemented in SDK v0.1.1 | Limits or future work |
+| Capability | Implemented in SDK v0.1.2 | Limits or future work |
 | --- | --- | --- |
 | Generic game runtime | Directory runner, `GameHost`, `ConnectedGameHost`, `GameSession`, customizable frame and sandbox bridge. | 960 × 640 is the reference layout. Existing renderers/build tools can use a thin React adapter. |
 | Wallet connection | EIP-6963/injected EIP-1193 browser wallets and account/network lifecycle. | WalletConnect and native-wallet deep links are not supplied. Connection grants no transaction permission. |
