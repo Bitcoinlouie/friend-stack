@@ -76,7 +76,10 @@ Wallet connection and eligibility reads require no signing transaction. The
 runtime simulates RF balances and game actions. Keep on-chain game implementation
 and custom Solidity deferred unless explicitly requested; the later phase is
 undertaken with the Rare Friends team after publishing requirements are met.
-Deployment, transactions and publication require their applicable authorization.
+Contract deployment, transactions and official Rare Friends production publication
+require their applicable authorization. Public simulated previews on GitHub Pages
+are allowed without separate Rare Friends approval; see the
+[hosting instructions](../../README.md#build-and-share-a-preview).
 See the [prototype requirements](../../README.md#required-prototype-identity-and-interface).
 
 ## Fishing configuration

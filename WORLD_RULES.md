@@ -5,6 +5,12 @@ the requested game. The SDK's scenery, world presets and `GameWorld` renderer
 are optional building blocks. You can author your own world and assets while
 using the SDK runtime, selected Friend and fixed game actions.
 
+The **576 × 384 plane belongs to the optional renderer**. Custom cameras and
+worlds of any size are allowed; the **960 × 640 container is a viewport, not a
+world boundary**. Scrolling maps and connected rooms can extend beyond it.
+Choose sizes that perform well on your target devices. The
+[scrolling-world example](examples/scrolling-world) demonstrates a larger map.
+
 ## Default game experience
 
 Unless otherwise requested, deliver only the game component in the user's current
@@ -18,7 +24,7 @@ economy requirements in [AGENTS.md](AGENTS.md).
 
 ## Movement and interaction
 
-Fit the world and its menus inside the SDK's 960 × 640 game container. Keep
+Render the world's visible area and its menus inside the SDK's 960 × 640 game container. Keep
 movement, collision, pointer coordinates and depth ordering consistent with your
 chosen camera. Visible obstacles and interaction prompts should match their
 collision shapes and usable areas. Support keyboard and touch, readable controls,

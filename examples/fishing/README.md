@@ -15,7 +15,10 @@ Generations NFT, including simulated previews. See the
 Keep purchases, rewards and redemption simulated by default. Read-only ownership
 checks remain required. On-chain implementation is a later phase with the Rare
 Friends team after publishing requirements are met, unless explicitly requested.
-Transactions, deployment and publication require their applicable authorization.
+Transactions, contract deployment and official Rare Friends production publication
+require their applicable authorization. You may host a public simulated preview
+on GitHub Pages without separate Rare Friends approval; see the
+[hosting instructions](../../README.md#build-and-share-a-preview).
 
 ## Run the example
 

@@ -1,6 +1,6 @@
 # FriendSDK API
 
-SDK **v0.1** exports browser ESM and TypeScript declarations. Import modules from
+SDK **v0.1.1** exports browser ESM and TypeScript declarations. Import modules from
 `@rarefriends/friendsdk/<module>`. Build with Node.js 22+ using `npm ci` and
 `npm run build`.
 
@@ -100,12 +100,78 @@ import "@rarefriends/friendsdk/ui.css";
 import "@rarefriends/friendsdk/reveal.css";
 ```
 
+## Node tooling
+
+These supported exports run in Node.js 22+, outside the game sandbox:
+
+| Module | API |
+| --- | --- |
+| `@rarefriends/friendsdk/build` | `buildGame(gameDirectory, { outdir?, watch?, deployment? })`, `readGameDeployment(input)` |
+| `@rarefriends/friendsdk/serve` | `createGameServer(outdir)` |
+| `@rarefriends/friendsdk/testing` | `testGame(gameDirectory, options?)` |
+
+`buildGame` returns `{ outdir, close }`. The default output is the game's
+`.friendsdk/` directory; `watch: true` rebuilds changed sources until `close()`.
+`deployment` is an optional public deployment object; omit it for simulated play.
+`createGameServer` returns a Node HTTP server serving only generated game files.
+For example:
+
+```js
+import { buildGame } from "@rarefriends/friendsdk/build";
+import { createGameServer } from "@rarefriends/friendsdk/serve";
+
+const build = await buildGame("./games/my-game");
+const server = createGameServer(build.outdir);
+server.listen(4173, "127.0.0.1");
+// At shutdown, close the server and await build.close().
+```
+
+The CLI exposes the same install → init → dev → build workflow, plus
+`friendsdk check <game-directory>` for game validation and
+`friendsdk test <game-directory>` for an automated browser smoke check.
+Run `friendsdk --help` for options and `friendsdk --version` for the package version.
+
+### Automated game tests
+
+Install `playwright` as a development dependency and install its Chromium browser
+(`npx playwright install chromium`). `testGame` builds into a temporary directory,
+launches headless Chromium and runs the ordinary runtime with a mock wallet,
+mock Robinhood RPC responses and sample canonical sprites. It closes its browser
+and server after the check. Mocks are limited to automated tests; normal previews
+and builds retain the real ownership gate.
+
+Options include `width`, `height`, `timeout`, a `screenshot` file path and an
+async `check` callback. The callback receives `{ page, game, friendId, account,
+friendWallet }`; `game` is a Playwright `FrameLocator` for the sandbox and `page`
+is the runtime's page. Use a focused interaction check for your game's controls.
+For a game copied from the starter:
+
+```js
+import { testGame } from "@rarefriends/friendsdk/testing";
+
+await testGame("./games/my-game", {
+  screenshot: "./artifacts/game.png",
+  check: async ({ game }) => {
+    await game.getByRole("button", { name: "Settings", exact: true }).click();
+    await game.getByRole("button", { name: "Sound off", exact: true }).click();
+  },
+});
+```
+
+The smoke check detects browser errors and runtime startup failures. Game-specific
+assertions remain your callback's responsibility; mock tests do not verify real
+RPC availability or ownership. Check the real wallet flow before delivering play.
+
 ## World and artwork
 
 Choose the game's setting, assets, visual style, palette, camera and rendering
 approach. `GameWorld`, bundled world assets, presets and their illustration style
 are optional utilities and example choices. Custom worlds use the same runtime,
 sandbox, SDK menus and fixed action client.
+
+The optional renderer's 576 × 384 plane is not a platform bound. The 960 × 640
+frame is a viewport; custom cameras and worlds of any size are allowed. See
+`examples/scrolling-world` for a larger map with a following camera.
 
 The SDK's low-level movement utility does not attach events. When using it,
 forward keyboard/pointer input, call `update(deltaMs)` in the animation loop,
@@ -128,7 +194,8 @@ before mounting the child. Account, network and Friend changes cancel pending
 confirmations, close stale bridges and trigger a fresh check. Errors or missing
 identity inputs cannot fall back to sample play. Internal tests may use mocks.
 
-Advanced discovery with `readOwnedFriends` returns `{ friends, blockNumber }`.
+Advanced discovery with `readOwnedFriends` returns `{ friends, blockNumber, hiddenCount }`.
+`hiddenCount` reports owned generation-0 Friends excluded from the playable list.
 It reads the account's balance at a fresh block and queries `Transfer` logs
 filtered by `to` and `from` account. It reconstructs currently held IDs and checks
 owner, generation and canonical wallet at the same block. It does not scan every
@@ -138,11 +205,16 @@ Options accept a deployment and abort signal.
 
 `createFriendWalletSession({ provider?, target? })` supports EIP-6963 discovery
 and injected EIP-1193 wallets. A supplied provider reuses existing wallet context.
-The session exposes `getSnapshot`, `subscribe`, `connect(walletId?)`, `refresh`,
+The session exposes `getSnapshot`, `subscribe`, `connect(walletId?)`, `switchNetwork`, `refresh`,
 `disconnect`, `getProvider` and `dispose`. Discovery/restoration uses read-only requests;
 `connect` requests accounts from a user gesture. Identity revisions invalidate
 stale reads when the provider, account or chain changes. `disconnect` forgets the
-local session. These APIs do not sign, deploy, switch chains or spend.
+local session. `switchNetwork()` requests Robinhood mainnet from a user gesture,
+adding the official network configuration if the wallet reports an unknown chain.
+The runtime shows a pending state, handles declined requests, and rechecks the
+connection before loading Friends. These APIs do not sign, deploy or spend.
+The picker distinguishes missing wallets, disconnected accounts, wrong networks,
+failed discovery and successful empty results, and explains hidden generation-0 Friends.
 
 `createFriendPublicClient({ rpcUrl? })` uses the package's public RPC by default.
 No private API key or signer is required for wallet/ownership reads. Keep wallet
@@ -245,9 +317,11 @@ unmount. Community code stays in the sandbox.
 ## Optional contract transport
 
 On-chain implementation is a later phase with the Rare Friends team after
-publishing requirements are met, unless explicitly requested. Funding,
-deployment, signatures, transactions and publication require their applicable
-explicit authorization. Contract tooling is described in [README.md](README.md#optional-contract-development)
+publishing requirements are met, unless explicitly requested. Funding, contract
+deployment, signatures, transactions and official Rare Friends production
+publication require their applicable explicit authorization. Public simulated
+previews on GitHub Pages are allowed; see [hosting instructions](README.md#build-and-share-a-preview).
+Contract tooling is described in [README.md](README.md#optional-contract-development)
 and [contracts/README.md](contracts/README.md).
 
 For explicitly approved real contract testing, deploy the standalone game with
@@ -306,7 +380,7 @@ and proposed recovery work.
 
 ## Unsupported actions
 
-SDK v0.1 has no trading, listing, bidding, swap, creator-fee/revenue-share, wearable
+SDK v0.1.1 has no trading, listing, bidding, swap, creator-fee/revenue-share, wearable
 NFT or hat APIs. Fixed-price vendor redemption is the supported sale model.
 The browser runtime supports preview and explicitly configured live play. See the
 [capability list](HOST_INTEGRATION.md#capabilities) for implemented functions and

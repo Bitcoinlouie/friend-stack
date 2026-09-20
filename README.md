@@ -1,4 +1,4 @@
-# FriendSDK v0.1
+# FriendSDK v0.1.1
 
 Build a playable Rare Friends game with your AI coding agent. You create the
 world, activities and game rules; the SDK supplies wallet connection, owned
@@ -8,6 +8,27 @@ game container. Purchases and rewards are simulated by default.
 Start in this repository or install the package in your current project. The SDK
 includes the runtime, optional world assets and examples to get started. Choose
 the world's artwork and visual style to suit your game.
+
+**World size is yours to choose.** The 576 × 384 plane belongs to the optional
+renderer; custom cameras and worlds of any size are allowed. The 960 × 640
+container is the viewing window, not a world boundary. See the
+[scrolling-world example](examples/scrolling-world) for a larger map and camera.
+
+## Is FriendSDK right for your idea?
+
+FriendSDK fits games that use its Friend identity, sandboxed viewport and game
+actions. Before building, check the [current capabilities](HOST_INTEGRATION.md#capabilities)
+against your idea. Coding agents should make this check before scaffolding a project.
+
+**FriendSDK is optional for vibeathon submissions.** If you're building a launchpad,
+tool, agent or another experience that doesn't fit the SDK, use the stack and
+interface that suit it. Follow the
+[Rare Friends Vibeathon submission guidelines](https://github.com/spokesz/rarefriends-vibeathon#how-to-submit)
+for the non-SDK path, including source, run instructions and a demo. The SDK's
+container and game-specific rules apply to SDK games; consult the vibeathon
+guidelines for other submissions.
+
+For build or submission help, join [Vibeathon support on Telegram](https://t.me/RFVibeathon).
 
 ## What you need
 
@@ -51,7 +72,7 @@ git --version
 
 ### Windows
 
-Use **Ubuntu in WSL2** for the v0.1 workflow. Open PowerShell as Administrator:
+Use **Ubuntu in WSL2** for this workflow. Open PowerShell as Administrator:
 
 ```powershell
 wsl --install -d Ubuntu
@@ -85,9 +106,16 @@ If you downloaded a ZIP, extract it and open a terminal in the folder containing
 `package.json`; start with `npm ci`.
 
 Open the displayed URL, normally `http://localhost:4173`. Choose **Connect
-wallet**, select your owned Friend, and enter the garden. Move with WASD, arrow
+wallet**. If your wallet is on Ethereum or another network, choose **Switch to
+Robinhood** and approve the network change in your wallet. The runtime can add
+Robinhood mainnet if needed, using the [official network settings](https://docs.robinhood.com/chain/connecting/).
+Then select your owned Friend and enter the garden. Move with WASD, arrow
 keys or a tap/click destination. Walk to the pack dispenser to buy a simulated
 pack, then to the opening station to reveal it.
+
+The picker explains missing wallets and connection or discovery failures, with
+retry controls. It reports generation-0 Friends as hidden because play requires
+a hardwired Friend (generation 1 or higher).
 
 Keep the terminal running while you play. Source changes rebuild automatically;
 refresh the browser to see them. Press **Ctrl+C** to stop the server.
@@ -113,7 +141,7 @@ The commands to create and run your own copy of the starter are:
 
 ```sh
 npm run build
-node scripts/dev-game.mjs init games/my-game
+npx friendsdk init games/my-game
 npm run dev:game -- games/my-game
 ```
 
@@ -148,6 +176,24 @@ loading and error states.
 Use existing wallet and Friend context through `ConnectedGameHost` when supplied
 by the current project; see [the runtime guide](HOST_INTEGRATION.md).
 
+### Larger worlds and practical details
+
+Run `npm run dev:game -- examples/scrolling-world` to try a larger world inside
+the same frame. Custom cameras, scrolling maps and connected rooms are allowed;
+choose a world size that performs well on your target devices. The optional
+`GameWorld` renderer's fixed camera is one starting point, not a platform limit.
+
+- **Toolbar:** the runtime overlays wallet/Friend controls at the bottom-left
+  and a menu button at the bottom-right. Place important HUD controls clear of
+  them and check on a phone-sized viewport.
+- **Small screens:** the frame keeps its 3:2 aspect ratio. At 360 pixels wide it
+  is about 240 pixels tall; make text and touch targets readable at that size.
+- **Storage:** the sandbox has no `localStorage` or IndexedDB access and the
+  bridge has no save API. Simulated balances and inventory last for the runtime
+  session; reloading starts a new session. Persistent progress is not supplied.
+- **Input:** transform pointer coordinates through your camera and display
+  scale, and pause movement when the runtime opens a menu.
+
 ## Try the fishing example
 
 Fishing is a complete example with a bait vendor, lake, catches and fixed-price
@@ -174,17 +220,39 @@ separate from game development.
 
 ## Build and share a preview
 
+**You may deploy and share public playable previews on GitHub Pages or another
+static host, including from your own fork. No separate Rare Friends approval is
+required for submission previews.** This permission includes the bundled SDK
+runtime and SDK-supplied artwork used in the preview. Keep the wallet/ownership
+gate and label the economy as simulated. Official publication through Rare
+Friends remains a separate review.
+
 Build your component from the SDK root:
 
 ```sh
 npm run build
-node scripts/dev-game.mjs build games/my-game
+npx friendsdk build games/my-game
+npx friendsdk check games/my-game
 ```
 
 The output is `games/my-game/.friendsdk/`. Use that folder as your static site's
 root and upload all generated HTML, JavaScript, CSS and assets. Preserve relative
 paths and the sandbox document's CSP. See [serving requirements](HOST_INTEGRATION.md#serving-and-sandbox)
-for HTTPS hosting. Publishing a game requires its own explicit authorization.
+for HTTPS hosting.
+
+To host on **GitHub Pages**:
+
+1. Copy the **contents** of `games/my-game/.friendsdk/` into the root of a dedicated
+   `gh-pages` branch in your repository or fork. Keep `index.html`, `game.html`,
+   JavaScript, CSS and asset folders together, and add an empty `.nojekyll` file.
+2. In **Settings → Pages**, choose **Deploy from a branch**, select `gh-pages`
+   and **/(root)**, then save. See [GitHub's publishing instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+3. Open `https://<account>.github.io/<repository>/`, verify the preview works,
+   and add that URL to your submission README and PR description.
+
+You may also use your own GitHub Pages Actions workflow to deploy the generated
+files. Players still need an eligible Friend and a wallet on Robinhood mainnet;
+the automated test harness's mocked wallet is not included in public builds.
 
 To play from another device on your local network:
 
@@ -198,33 +266,59 @@ also needs [LAN networking configuration](https://learn.microsoft.com/en-us/wind
 
 ## Install in an existing project
 
-Create a package archive from the SDK folder:
+Download `rarefriends-friendsdk-0.1.1.tgz` from the
+[v0.1.1 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.1)
+into your existing project, then run there:
 
 ```sh
-npm ci
-npm pack
-```
-
-The **v0.1** release uses npm version **0.1.0**. Copy
-`rarefriends-friendsdk-0.1.0.tgz` into your existing project, then run there:
-
-```sh
-npm install ./rarefriends-friendsdk-0.1.0.tgz react react-dom
+npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom
 npx friendsdk init ./games/my-game
 npx friendsdk dev ./games/my-game
 ```
 
-Build with `npx friendsdk build ./games/my-game`. The package supplies the runner
-and runtime; your agent works in your current project. For an existing React
+To create the archive yourself from an SDK checkout, run `npm ci` and `npm pack`.
+
+Build with `npx friendsdk build ./games/my-game`, then validate with
+`npx friendsdk check ./games/my-game`. The package supplies the runner and
+runtime; your agent works in your current project. Node tooling has supported
+`@rarefriends/friendsdk/build`, `/serve` and `/testing` imports; no relative
+imports into `node_modules` are needed. See [tooling APIs](API.md#node-tooling).
+For an existing React
 mount, use `GameHost` or `ConnectedGameHost` from
 `@rarefriends/friendsdk/runtime`. See [runtime integration](HOST_INTEGRATION.md).
+
+The SDK is distributed as a package archive. Publication to the npm registry
+is not planned. Source code uses [Apache-2.0](LICENSE); artwork
+permissions are separate. See [NOTICE.md](NOTICE.md).
+
+### Check your game without a wallet
+
+The automated browser harness works with any game directory. It provides a mock
+wallet, mock Robinhood RPC reads and sample canonical sprites, runs the normal
+runtime and captures browser errors. Install its optional browser dependency once:
+
+```sh
+npm install -D playwright
+npx playwright install chromium
+npx friendsdk test ./games/my-game --screenshot ./artifacts/game.png
+```
+
+On Linux, use `npx playwright install --with-deps chromium` if system libraries
+are missing. Add `--width 360` to check a phone-sized frame. The test builds into
+a temporary directory and closes its browser/server when finished. Add a focused
+interaction check with the exported [test helper](API.md#automated-game-tests).
+
+Mocks are for automated tests only. `dev` and `build` still require a connected
+wallet owning an eligible Friend on Robinhood before play. A passing mock test
+does not verify real ownership reads or replace a real-wallet playtest.
 
 ## Optional contract development
 
 Keep the first game prototype simulated. Use the supplied live adapter and
-contract tools when you explicitly choose to implement on-chain play. Deployment,
-funding, wallet transactions and publication each require the applicable explicit
-authorization. Production publication requires separate Rare Friends review.
+contract tools when you explicitly choose to implement on-chain play. Contract
+deployment, funding and wallet transactions require explicit authorization.
+Official production publication through Rare Friends requires separate review;
+[hosting a simulated submission preview](#build-and-share-a-preview) is allowed.
 
 ### Deploy your game to mainnet
 
@@ -247,7 +341,9 @@ covers that connection, deployment resume and terminal play.
 
 ## Verify and submit
 
-Ask your agent to run these checks from the SDK root:
+For a game, build it, run `friendsdk check` and `friendsdk test` as above, and
+check its keyboard/touch interactions. For SDK changes, run the relevant tests
+and checks from the SDK root:
 
 ```sh
 npm test
@@ -262,7 +358,11 @@ package installation. Foundry is optional for the SDK checks: local contract
 integration tests report a skip when its tools are unavailable. For contract
 changes, also run the checks in the [contract guide](contracts/README.md).
 
-Submit the game source and assets, run instructions, SDK version **v0.1** and
+For vibeathon game submissions, include a **public playable preview URL** in the
+submission README and PR description, with the required wallet/network and
+controls. GitHub Pages is an allowed host; use the steps above.
+
+Submit the game source and assets, run instructions, SDK version **v0.1.1** and
 exact costs, outcome weights, rewards and consumable rules. RF uses bigint base
 units (`1 RF = 10n ** 18n`). Each purchased consumable reserves its maximum prize;
 kept rewards retain their RF backing with no redemption expiry. Label simulated
@@ -270,8 +370,9 @@ results, and claim live transactions only after verified receipts.
 
 Record asset sources and any capability gaps. Supply thumbnail/title, developer
 credit, About and Store metadata only when requested by the publishing interface.
-Rare Friends reviews the game and assets against `AGENTS.md` before production
-publication. Automated checks do not deploy or publish games.
+Rare Friends reviews the game and assets against `AGENTS.md` before official
+production publication. This repository's checks do not deploy games; developers
+may host submission previews themselves or through their own Pages workflow.
 
 ## Reference docs
 
@@ -286,5 +387,5 @@ publication. Automated checks do not deploy or publish games.
 | [Contracts](contracts/README.md) | Optional contract deployment and developer tooling |
 | [Oracle operations](docs/oracle/README.md) | RNG delivery, pending plays and proposed recovery work |
 
-Trading, creator fees and wearable NFTs are not implemented in v0.1. See the
+Trading, creator fees and wearable NFTs are not implemented in v0.1.1. See the
 [capability list](HOST_INTEGRATION.md#capabilities) for the full supported scope.

@@ -189,20 +189,28 @@ export function createGameServer(outdir) {
 
 async function main() {
   const args = process.argv.slice(2), command = args.shift() ?? 'dev';
-  const usage = 'Usage: friendsdk init|dev|build [game-directory] [--outdir output-directory] [--deployment public-deployment.json] [--host 127.0.0.1] [--port 4173]';
-  if (!['init', 'dev', 'build'].includes(command)) throw new Error(usage);
-  let directory, deploymentPath, outdir, host = '127.0.0.1', port = 4173;
+  const usage = 'Usage: friendsdk init|dev|build|check|test <game-directory>\nDev/build: --outdir directory --deployment public-deployment.json\nDev: --host 127.0.0.1 --port 4173\nTest (automated): --width 960 --screenshot image.png';
+  if (command === '--help') { console.log(usage); return; }
+  if (command === '--version') { console.log(packageJson.version); return; }
+  if (!['init', 'dev', 'build', 'check', 'test'].includes(command)) throw new Error(usage);
+  let directory, deploymentPath, outdir, screenshot, width = 960, host = '127.0.0.1', port = 4173;
+  const allowed = command === 'dev' ? ['--deployment', '--outdir', '--host', '--port']
+    : command === 'build' ? ['--deployment', '--outdir'] : command === 'test' ? ['--width', '--screenshot'] : [];
   const flags = new Set();
   while (args.length) {
     const arg = args.shift();
     if (!arg.startsWith('--')) { if (directory !== undefined) throw new Error(usage); directory = arg; continue; }
-    if (!['--deployment', '--outdir', '--host', '--port'].includes(arg) || flags.has(arg) || command === 'init' ||
-        (command !== 'dev' && !['--deployment', '--outdir'].includes(arg))) throw new Error(usage);
+    if (!allowed.includes(arg) || flags.has(arg)) throw new Error(usage);
     flags.add(arg);
     const value = args.shift();
     if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}.`);
     if (arg === '--deployment') deploymentPath = value;
     else if (arg === '--outdir') outdir = value;
+    else if (arg === '--screenshot') screenshot = value;
+    else if (arg === '--width') {
+      if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) throw new Error('Width must be a positive integer in pixels.');
+      width = Number(value);
+    }
     else if (arg === '--host') { if (/[\s/]/.test(value)) throw new Error('Invalid listen host.'); host = value; }
     else {
       if (!/^[0-9]+$/.test(value) || Number(value) < 1 || Number(value) > 65535) throw new Error('Port must be between 1 and 65535.');
@@ -217,6 +225,17 @@ async function main() {
     await cp(path.join(sdkRoot, 'examples/starter'), path.resolve(directory), { recursive: true, errorOnExist: true,
       filter: source => !['.friendsdk', 'dist'].includes(path.basename(source)) });
     console.log(`Created ${directory}. Run: friendsdk dev ${directory}`);
+    return;
+  }
+  if (command === 'check') {
+    const { checkGame } = await import('./check-games.mjs');
+    console.log(await checkGame(directory));
+    return;
+  }
+  if (command === 'test') {
+    const { testGame } = await import('./testing.mjs');
+    const result = await testGame(directory, { width, screenshot });
+    console.log(`PASS ${result.gameDirectory}: automated fixture at ${result.width}px${result.screenshot ? `; screenshot ${result.screenshot}` : ''}`);
     return;
   }
   const deployment = deploymentPath ? JSON.parse(await readFile(path.resolve(deploymentPath), 'utf8')) : undefined;
