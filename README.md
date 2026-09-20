@@ -14,6 +14,22 @@ renderer; custom cameras and worlds of any size are allowed. The 960 × 640
 container is the viewing window, not a world boundary. See the
 [scrolling-world example](examples/scrolling-world) for a larger map and camera.
 
+## Is FriendSDK right for your idea?
+
+FriendSDK fits games that use its Friend identity, sandboxed viewport and game
+actions. Before building, check the [current capabilities](HOST_INTEGRATION.md#capabilities)
+against your idea. Coding agents should make this check before scaffolding a project.
+
+**FriendSDK is optional for vibeathon submissions.** If you're building a launchpad,
+tool, agent or another experience that doesn't fit the SDK, use the stack and
+interface that suit it. Follow the
+[Rare Friends Vibeathon submission guidelines](https://github.com/spokesz/rarefriends-vibeathon#how-to-submit)
+for the non-SDK path, including source, run instructions and a demo. The SDK's
+container and game-specific rules apply to SDK games; consult the vibeathon
+guidelines for other submissions.
+
+For build or submission help, join [Vibeathon support on Telegram](https://t.me/RFVibeathon).
+
 ## What you need
 
 - A Linux or Windows computer and an AI coding agent that can edit files and run
