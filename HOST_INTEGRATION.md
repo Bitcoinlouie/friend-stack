@@ -40,14 +40,10 @@ npm run dev:game -- examples/starter
 
 Run another game with `npm run dev:game -- games/my-game`.
 
-To install in an existing project, create an archive from a downloaded SDK:
-
-```sh
-npm ci
-npm pack
-```
-
-Copy `rarefriends-friendsdk-0.1.1.tgz` into the current project directory and run:
+To install in an existing project, download `rarefriends-friendsdk-0.1.1.tgz`
+from the [v0.1.1 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.1).
+You can also build the archive from an SDK checkout with `npm ci` and `npm pack`.
+Put the archive in the current project directory and run:
 
 ```sh
 npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom

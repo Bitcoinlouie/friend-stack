@@ -266,21 +266,17 @@ also needs [LAN networking configuration](https://learn.microsoft.com/en-us/wind
 
 ## Install in an existing project
 
-Create a package archive from the SDK folder:
-
-```sh
-npm ci
-npm pack
-```
-
-This release uses package version **0.1.1**. Copy
-`rarefriends-friendsdk-0.1.1.tgz` into your existing project, then run there:
+Download `rarefriends-friendsdk-0.1.1.tgz` from the
+[v0.1.1 GitHub release](https://github.com/spokesz/friendsdk/releases/tag/v0.1.1)
+into your existing project, then run there:
 
 ```sh
 npm install ./rarefriends-friendsdk-0.1.1.tgz react react-dom
 npx friendsdk init ./games/my-game
 npx friendsdk dev ./games/my-game
 ```
+
+To create the archive yourself from an SDK checkout, run `npm ci` and `npm pack`.
 
 Build with `npx friendsdk build ./games/my-game`, then validate with
 `npx friendsdk check ./games/my-game`. The package supplies the runner and

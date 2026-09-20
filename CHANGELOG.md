@@ -15,6 +15,11 @@
 - Fixed validation of SDK asset imports in generated starter games.
 - Added Robinhood network switching and distinct wallet, discovery-error and
   empty-result states, including a count of hidden generation-0 Friends.
+- Explicitly allowed public playable previews on GitHub Pages, including the
+  bundled runtime and SDK artwork, without separate Rare Friends approval.
+- Added a non-SDK vibeathon submission path, playable-preview guidance and
+  Telegram support links for builders.
+- Fixed the custom-artwork validation fixture used by CI.
 
 Playable previews still require a wallet owning an eligible Friend on Robinhood.
 Purchases and rewards remain simulated by default. The SDK is distributed as a
