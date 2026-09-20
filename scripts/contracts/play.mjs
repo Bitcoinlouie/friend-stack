@@ -19,7 +19,7 @@ async function main(args) {
   }
   const manifestPath = resolve(args[0]);
   const manifest = await loadManifest(manifestPath);
-  const friendId = uint(args[1] ?? manifest.friendId, 'Friend ID');
+  const friendId = uint(args[1] ?? await ask('Your hardwired Generations NFT token ID: '), 'Friend ID');
   const { abi } = await artifact();
   const { client, wallet, account } = await signingClients();
   return playOnce({ client, wallet, account, abi, manifest, friendId, manifestPath });

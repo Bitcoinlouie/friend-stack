@@ -1,72 +1,109 @@
-# FriendSDK world rules
+# World and character guidance
 
-These rules continue the approved Rare Friends Isometric World Assets collection. The SDK reuses its shallow camera, ground geometry, and vector prop artwork. The supplied worlds are editable off-chain assets; the character reader retrieves on-chain sprite pixels. The world presets are not on-chain maps or released games.
+Choose world assets, art style, palette, camera and rendering approach to fit
+the requested game. The SDK's scenery, world presets and `GameWorld` renderer
+are optional building blocks. You can author your own world and assets while
+using the SDK runtime, selected Friend and fixed game actions.
 
-## One camera
+## Default game experience
 
-Design ground coordinates in a 576 × 384 plane. Native exports are 1600 × 1200. The camera is deliberately shallower than a conventional 2:1 isometric grid:
+Unless otherwise requested, deliver only the game component in the user's current
+project. The player controls their owned Rare Friend through keyboard and touch
+movement in a playable world. Place requested activities at interactable locations
+or objects: for example, a vendor to buy packs and a table to open them. Supporting
+menus handle those interactions; they do not replace the world with a page or
+dashboard. Do not add unrequested activities, site navigation, footers, About/Store
+pages or another application's frontend. Preserve the ownership and simulated
+economy requirements in [AGENTS.md](AGENTS.md).
+
+## Movement and interaction
+
+Fit the world and its menus inside the SDK's 960 × 640 game container. Keep
+movement, collision, pointer coordinates and depth ordering consistent with your
+chosen camera. Visible obstacles and interaction prompts should match their
+collision shapes and usable areas. Support keyboard and touch, readable controls,
+mute, reduced motion, loading, errors and retry.
+
+Pause movement and game input when the runtime's `paused` prop is true, and stop
+held movement on blur or hidden tabs. Validate movement along its full path so a
+large frame step cannot cross an obstacle. Define how the player reaches separate
+areas or crosses gaps as part of the game's rules.
+
+## Rare Friend character artwork
+
+Use the selected Friend's canonical sprites from the SDK's sprite reader.
+Character identity and pixels remain consistent across games; the surrounding
+world's art direction is yours. Artwork does not prove ownership; the runtime
+verifies the connected account separately.
+
+Canonical walking Friends are 16 × 16 one-bit masks. Preserve frame order and
+select direction explicitly. Draw square pixels at integer scale and integer
+screen placement. Native stills use 5× pixels, an 80 × 80 box, and an anchor at
+horizontal center / row 15.
+
+Preserve the original black mask and a white one-pixel halo, clipped to the
+16 × 16 box. Never rotate, skew, stretch, merge, smooth, recolor or generate
+replacement character pixels. Genesis 8 × 8 portraits are a separate collection,
+not substitute walking bodies. Colossus has no up/down frames; use the SDK's
+explicit horizontal fallback.
+
+## Optional SDK world renderer
+
+`GameWorld`, `@rarefriends/friendsdk/world`, `navigation`, `movement` and
+`loadWorldAssets` provide a ready-made implementation for the supplied world
+format. The details below apply when using those utilities. A custom renderer
+can use its own world format, camera and visual effects.
+
+### Coordinates and projection
+
+The supplied renderer uses a 576 × 384 ground plane and 1600 × 1200 native
+exports, with this shallow projection:
 
 ```text
 screenX = 800 + 1.5 × 0.8660254038 × (x - y - 96)
 screenY = 690 + 1.5 × 0.28 × (x + y - 480) - lift
 ```
 
-Use the SDK projection and inverse for drawing and pointer input. Crop or uniformly scale the complete composition to fit a game frame. Never independently stretch the two axes. A vertical lift is a screen-space offset; inverse projection for walking assumes lift = 0.
+When using it, pair `project` with `unproject` for drawing and pointer input.
+Crop or uniformly scale the composition to fit the game frame. A vertical lift
+is a screen-space offset; inverse projection for walking assumes `lift = 0`.
+Upright props and characters sort by their ground anchor's `x + y`.
 
-## Palette and surface
+### Presets and color options
 
-The default renderer preserves the original black/white scenery and sparse signal green `#CCFF00`. Games can opt into the shared five-color `GAME_PALETTE`, with black `#000000` outlines and white `#FFFFFF` details:
-
-| Name | Color | Main uses |
-| --- | --- | --- |
-| `meadow` | `#B9D984` | Ground and trees |
-| `pond` | `#7DB4DB` | Water and water props |
-| `sun` | `#F2CE68` | Paths, wood, and signals |
-| `coral` | `#ED927E` | Slab walls, flowers, and planters |
-| `lilac` | `#B3A0D8` | Crystals, machinery, and construction guides |
+Supplied presets contain editable off-chain scene data. The renderer provides
+monochrome scenery with signal green `#CCFF00`, or its `GAME_PALETTE` through
+`{ color: true }`. These are options for the supplied artwork; your game can
+choose its own colors, textures, effects and world assets.
 
 ```js
-import { getWorldPreset, renderWorld, renderWorldLayers, renderProp } from '@rarefriends/friendsdk/world';
+import { getWorldPreset, renderWorld, renderProp } from '@rarefriends/friendsdk/world';
 
 const world = getWorldPreset('01-garden-oval-complete');
 const svg = renderWorld(world, { color: true });
-const layers = renderWorldLayers(world, { color: true, signals: false });
 const tree = renderProp('tree', { color: true });
 ```
 
-`propArtwork(type, id, { color: true })` returns the matching prop fragment; use `renderProp` when you need its pattern definitions and a standalone SVG. Omit `color` or set it to `false` for the original artwork. Color changes surface fills and patterns, never geometry, projection, collision, depth order, or canonical Friend pixels. It adds no font or package dependency.
+### Geometry and loading variants
 
-- Keep this palette for colored scenery and game UI. Keep canonical Friend pixels black and white in both modes.
-- Use hard outlines, pixel-like steps, and small clipped dither or grid patches. No gradients, soft shadows, blurred edges, or replacement colored character art.
-- In the original mode, reserve signal green for currency indicators, small active lights, and unfinished geometry. Color mode uses sun for signals and lilac for construction guides. A colored indicator is not evidence of a paid reward.
-- Let a world's silhouette communicate its setting: oval garden, courtyard ring, terraced mesa, rooftop L, separate islands, or hexagonal decks. Keep tall landmarks mostly at the back and leave room for characters and movement.
+The SDK world format describes ground polygons, holes, paths, prop footprints
+and blocked areas. Its navigation utilities use these shapes for collision;
+`validateWorld` checks the scene definition. `renderWorldLayers` separates terrain
+and objects for depth-sorted animation. Games define interactions, reach and
+object-specific behavior.
 
-## Anchors, collision, and depth
+Optional loading variants use a 48 × 48 construction grid with `void`,
+`wireframe` and `floating` chunks. Those variants remove ground, paths, textures
+and props at missing chunks. Custom worlds can present their own loading states.
 
-Project the ground anchor of a prop or Friend. Keep the object itself upright. Sort all upright objects by `x + y` so a Friend can pass behind a tree. The SDK provides separate terrain and object layers for animated games.
+## Asset delivery and review
 
-Geometry has explicit outer polygons, courtyard holes, slab depth, and missing chunks. Textures and paths are clipped to the loaded top surface. Ground containment is separate from walking: water patches and solid prop footprints also block a Friend. The SDK supplies conservative default footprints; games can author explicit blocked rectangles for their own props and mechanics. A painted path is decorative unless game rules give it meaning. Disconnected islands need a game-defined route or teleport; never silently walk across a gap.
+Include the world assets your game uses and record their sources and permissions.
+Keep editable source files in the game directory and load assets within the
+sandbox's serving policy. Do not insert raw SVG supplied by players into the page.
 
-Run scene validation after editing. A valid anchor must be supported by loaded ground. Validate new movement along its full segment so a large frame step cannot cross a thin obstacle. Rendering is not a physics simulation: games own interactions, reach, slopes, jumps, and object-specific behavior.
-
-## Friends
-
-Canonical walking Friends are 16 × 16 one-bit masks. Use the live sprite reader, preserve frame order, and select direction explicitly. Draw square pixels at integer scale and integer screen placement. Native stills use 5× pixels, an 80 × 80 box, and an anchor at horizontal center / row 15.
-
-Preserve the original black mask and a white one-pixel halo, clipped to the 16 × 16 box. Never rotate, skew, stretch, merge, smooth, recolor, or generate replacement character pixels. Genesis 8 × 8 portraits are a separate collection, not substitute walking bodies. Colossus has no up/down frames; use the SDK's explicit horizontal fallback.
-
-## Loading and unfinished worlds
-
-Use the existing 48 × 48 construction grid. Loading variants remove additional chunks from the complete silhouette. Courtyard holes and gaps between islands remain real architecture in both variants.
-
-- `void`: remove the surface, revealing negative space and the black underside.
-- `wireframe`: remove the surface and show an open guide without a filled tile; green by default, lilac in color mode.
-- `floating`: remove the socket and suspend a separate dither tile above it; white by default, sun in color mode. `lift` is in native screen pixels.
-
-Paths and textures disappear inside every missing chunk. Omit props, signals, and actor anchors above missing ground. Clip boundary sockets to the intended silhouette; do not accidentally create extra exterior platforms.
-
-## New assets and review
-
-Start from an existing preset and give a new world a distinct silhouette, setting, and landmarks. Extend vector prop artwork in the renderer; keep a single source for both scene and standalone exports. Record each prop's ground anchor and collision footprint. Do not insert raw SVG supplied by players into the page.
-
-Export editable JSON, a transparent SVG, and a still for visual review. Inspect on both light and dark backgrounds, including edges, clipping, front/back occlusion, loading gaps, pixel scale, and every newly drawn prop. If adding a new prop type, export it independently with its anchor so other creators can reuse it.
+Review the playable result on phones and computers: character readability,
+clipping, collision, interaction reach, front/back ordering, loading and error
+states. When using the SDK world format, validate edited scenes and record prop
+anchors and collision footprints. Document any custom renderer or asset build
+steps with the game's run instructions.

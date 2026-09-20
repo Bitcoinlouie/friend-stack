@@ -1,162 +1,290 @@
-# FriendSDK v1
+# FriendSDK v0.1
 
-An isolated kit for building small RF chance games. Developers can deploy their own v1 game contracts on Robinhood mainnet using existing RF and Generations assets, then develop against that deployment.
+Build a playable Rare Friends game with your AI coding agent. You create the
+world, activities and game rules; the SDK supplies wallet connection, owned
+Friend selection, inventory, action confirmations and a sandboxed **960 × 640**
+game container. Purchases and rewards are simulated by default.
 
-The fishing reference runs locally from `examples/fishing` as a clearly labeled preview. The production `rarefriends-web` app has no FriendSDK integration, SDK content, or game demo. Keep SDK development, contracts, assets, and builds in this repository. No game deployment is bundled.
+Start in this repository or install the package in your current project. The SDK
+includes the runtime, optional world assets and examples to get started. Choose
+the world's artwork and visual style to suit your game.
 
-## Prerequisites
+## What you need
 
-- Node.js 22+ and npm.
-- [Foundry](https://getfoundry.sh/introduction/installation/) (`forge` and `anvil` on your `PATH`) to build and test contracts. Solidity 0.8.36 and the required third-party Solidity sources are pinned by this repo.
-- Your own **hardwired Generations NFT on Robinhood mainnet**, chain ID **4663**. Generation must be at least 1; activation and tier do not matter.
-- The private key of the wallet that owns that NFT, entered only at the script's hidden terminal prompt.
-- ETH in that wallet for deployment, transactions and Dice randomness fees. The script reads Dice's current fee before requesting randomness.
-- Existing `$RAREFRIENDS` (RF): the default fishing deployment starts with **10 RF of prize stake** from your signing wallet. Keep another **1 RF per purchased bait** in your NFT's canonical wallet, or in your signing wallet for the play script to transfer there. Larger stakes are optional.
+- A Linux or Windows computer and an AI coding agent that can edit files and run
+  terminal commands in your project.
+- **Node.js 22 or newer**, npm and Git. The setup below uses Node.js 22.
+- A browser wallet connected to **Robinhood mainnet (chain 4663)**, holding a
+  hardwired Rare Friends Generations NFT (generation ≥ 1).
 
-No new RF token, Generations NFT, NFT-wallet implementation or Dice oracle is deployed. The SDK does not use `$DICE` tokens.
+The wallet and NFT are required to play, including simulated previews. Preview
+balances and outcomes are simulated; preview play requires no RF funding,
+private key or transaction signature. Foundry is needed only for contract work.
 
-## 1. Install, build and test
+## Set up your machine
+
+### Linux
+
+Install Git with your distribution's package manager. On Ubuntu or Debian:
 
 ```sh
-cd ~/friendsdk
+sudo apt update
+sudo apt install -y git curl ca-certificates
+```
+
+Install [Node.js](https://nodejs.org/en/download) 22+ with npm. If you use
+[nvm](https://github.com/nvm-sh/nvm#installing-and-updating), install it using its
+official instructions, reopen your terminal, then run:
+
+```sh
+nvm install 22
+nvm use 22
+```
+
+Check that the tools are available in the terminal your agent uses:
+
+```sh
+node --version
+npm --version
+git --version
+```
+
+### Windows
+
+Use **Ubuntu in WSL2** for the v0.1 workflow. Open PowerShell as Administrator:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Restart if prompted, open **Ubuntu** from the Start menu, and finish creating
+its Linux username and password. See [Microsoft's WSL installation guide](https://learn.microsoft.com/en-us/windows/wsl/install)
+for prerequisites and installation help.
+
+Complete the Linux setup above **inside Ubuntu**, including Node.js, npm and Git.
+Run the remaining commands in Ubuntu. Keep the project in your Linux home
+folder, and open that folder with an agent/editor connected to WSL so its tools
+use the same environment. Native PowerShell builds and checks are not yet a
+verified SDK workflow.
+
+Your browser and wallet extension run on Windows. Open `http://localhost:4173`
+to reach the game running in WSL, as described in [Microsoft's networking guide](https://learn.microsoft.com/en-us/windows/wsl/networking#accessing-linux-networking-apps-from-windows-localhost).
+
+## Run your first game
+
+In your Linux or Ubuntu terminal, choose a folder for your projects and run:
+
+```sh
+git clone https://github.com/spokesz/friendsdk.git
+cd friendsdk
 npm ci
-npm run build:contracts
-npm run sync:contracts
+npm run dev:game -- examples/starter
+```
+
+If you downloaded a ZIP, extract it and open a terminal in the folder containing
+`package.json`; start with `npm ci`.
+
+Open the displayed URL, normally `http://localhost:4173`. Choose **Connect
+wallet**, select your owned Friend, and enter the garden. Move with WASD, arrow
+keys or a tap/click destination. Walk to the pack dispenser to buy a simulated
+pack, then to the opening station to reveal it.
+
+Keep the terminal running while you play. Source changes rebuild automatically;
+refresh the browser to see them. Press **Ctrl+C** to stop the server.
+
+## Build your game with an AI agent
+
+Open this project folder in your agent. After trying the starter, stop its server
+and give your agent a brief such as this, replacing the bracketed description:
+
+> Read AGENTS.md, README.md, API.md, WORLD_RULES.md and FISHING_GAME_DESIGN.md.
+> Build [describe the game and its activities] in games/my-game, starting from
+> examples/starter. Work in this project and deliver the game component, assets
+> and rules. Choose world assets and an art style that fit my idea. Use a playable
+> world with keyboard and touch movement; put activities at interactable world
+> objects or locations. Keep all UI inside the
+> SDK's game container. Use the SDK runtime for wallet connection, owned Friend
+> selection, inventory and confirmations. Keep purchases and rewards simulated.
+> Do not add website navigation, headers, footers, About/Store pages, a separate
+> wallet flow or another application checkout. Run the relevant checks and give
+> me the command and local URL to play.
+
+The commands to create and run your own copy of the starter are:
+
+```sh
+npm run build
+node scripts/dev-game.mjs init games/my-game
+npm run dev:game -- games/my-game
+```
+
+`init` creates a new directory and refuses to overwrite an existing one. Choose
+your own name in place of `my-game`. Your game files are:
+
+| File | What your agent changes |
+| --- | --- |
+| `index.tsx` | World, movement and interactions; default-export the game component |
+| `game.json` | Exact RF cost, outcome weights, rewards and consumable rules |
+| `style.css` and local assets | Your game's visual style and world artwork |
+| `README.md` | Your game's controls, run instructions and exact rules |
+
+The component receives `friendId`, `client` and `paused` through
+`GameComponentProps`. Use the SDK's fixed action client and menus. The supplied
+world renderer, presets and scenery are optional; your component can use its own
+world assets and rendering approach. Use the canonical Friend sprites for the
+selected character, and pause movement and interactions when `paused` is true.
+Edit source files; `.friendsdk/` contains generated output.
+
+### Required prototype identity and interface
+
+The runtime verifies fresh ownership of the selected hardwired Generations NFT
+before play and rechecks when the account, network or selection changes. Items
+and rewards belong to that NFT's canonical wallet. Mock identities are reserved
+for automated tests.
+
+Keep the world, vendors, inventory, reveals, settings and confirmations inside
+the same container. Preserve canonical Friend pixels and make collision and
+depth ordering match your world. Support keyboard/touch, mute, reduced motion,
+loading and error states.
+Use existing wallet and Friend context through `ConnectedGameHost` when supplied
+by the current project; see [the runtime guide](HOST_INTEGRATION.md).
+
+## Try the fishing example
+
+Fishing is a complete example with a bait vendor, lake, catches and fixed-price
+redemption. Run these commands from the SDK root:
+
+| Mode | Play locally | Build static files | Output folder |
+| --- | --- | --- | --- |
+| Simulated | `npm run dev:fishing` | `npm run build:fishing` | `examples/fishing/.friendsdk/preview/` |
+| Live contracts | `npm run dev:fishing:live` | `npm run build:fishing:live` | `examples/fishing/.friendsdk/live/` |
+
+Live mode uses the included [public deployment configuration](examples/fishing/deployment.json)
+and real wallet transactions. The NFT's canonical wallet needs RF for bait;
+**Transfer RF to Friend** in the wallet menu funds it from the connected account.
+Keep ETH in the signing wallet for gas and RNG fees. Bait costs **1 RF**, the
+maximum reward is **10 RF**, and the expected reward is **0.90 RF**. See the
+[fishing guide](examples/fishing/README.md) for controls and the full outcome table.
+
+The live runtime caps each Dice RNG request at **0.000025 ETH**, excluding gas.
+Rare Friends plans to subsidize RNG costs for all developers to improve the user
+experience and reduce costs. This demo uses wallet-paid RNG and does not include
+the subsidy. For a pending cast, choose **Resume cast** to continue its existing
+result. Detailed [oracle operations and recovery](docs/oracle/README.md) are
+separate from game development.
+
+## Build and share a preview
+
+Build your component from the SDK root:
+
+```sh
+npm run build
+node scripts/dev-game.mjs build games/my-game
+```
+
+The output is `games/my-game/.friendsdk/`. Use that folder as your static site's
+root and upload all generated HTML, JavaScript, CSS and assets. Preserve relative
+paths and the sandbox document's CSP. See [serving requirements](HOST_INTEGRATION.md#serving-and-sandbox)
+for HTTPS hosting. Publishing a game requires its own explicit authorization.
+
+To play from another device on your local network:
+
+```sh
+npm run dev:game -- games/my-game --host 0.0.0.0 --port 4173
+```
+
+Open `http://YOUR_COMPUTER_LAN_IP:4173` on that device using a browser with your
+wallet available. Allow the port through your local firewall as needed. WSL2
+also needs [LAN networking configuration](https://learn.microsoft.com/en-us/windows/wsl/networking#accessing-a-wsl-2-distribution-from-your-local-area-network-lan).
+
+## Install in an existing project
+
+Create a package archive from the SDK folder:
+
+```sh
+npm ci
+npm pack
+```
+
+The **v0.1** release uses npm version **0.1.0**. Copy
+`rarefriends-friendsdk-0.1.0.tgz` into your existing project, then run there:
+
+```sh
+npm install ./rarefriends-friendsdk-0.1.0.tgz react react-dom
+npx friendsdk init ./games/my-game
+npx friendsdk dev ./games/my-game
+```
+
+Build with `npx friendsdk build ./games/my-game`. The package supplies the runner
+and runtime; your agent works in your current project. For an existing React
+mount, use `GameHost` or `ConnectedGameHost` from
+`@rarefriends/friendsdk/runtime`. See [runtime integration](HOST_INTEGRATION.md).
+
+## Optional contract development
+
+Keep the first game prototype simulated. Use the supplied live adapter and
+contract tools when you explicitly choose to implement on-chain play. Deployment,
+funding, wallet transactions and publication each require the applicable explicit
+authorization. Production publication requires separate Rare Friends review.
+
+### Deploy your game to mainnet
+
+Install [Foundry](https://getfoundry.sh/introduction/installation/) in your Linux
+or WSL environment, then follow [contract setup and deployment](contracts/README.md).
+The deploying wallet needs ETH for gas and RF for the prize stake. Deployment
+does not require a Generations NFT ID.
+
+From the SDK root:
+
+```sh
+npm run deploy:contracts -- examples/fishing/game.json
+```
+
+Enter the stake and private key only at the script's terminal prompts; the key
+prompt is hidden. Review the terms before confirming deployment. Never put a
+private key in chat, source or an environment file. The script prints a manifest
+for connecting the game to your contracts. The [contract guide](contracts/README.md#deploy-and-run-a-game)
+covers that connection, deployment resume and terminal play.
+
+## Verify and submit
+
+Ask your agent to run these checks from the SDK root:
+
+```sh
 npm test
 npm run typecheck
-npm run test:contracts
-npm run verify:contracts
 npm run check:games
+npx playwright install --with-deps chromium
+npm run check:browser
 ```
 
-`npm test` also builds the SDK and browser example. These checks use local test contracts; no mainnet transaction is sent. The optional fork check below reads existing mainnet contracts and executes locally, with simulated Dice delivery:
+Playwright's browser installation is a one-time setup; Linux may request system
+package installation. Foundry is optional for the SDK checks: local contract
+integration tests report a skip when its tools are unavailable. For contract
+changes, also run the checks in the [contract guide](contracts/README.md).
 
-```sh
-FRIENDSDK_FORK_RPC=https://rpc.mainnet.chain.robinhood.com \
-  forge test --root contracts --match-contract MainnetForkTest -vv
-```
+Submit the game source and assets, run instructions, SDK version **v0.1** and
+exact costs, outcome weights, rewards and consumable rules. RF uses bigint base
+units (`1 RF = 10n ** 18n`). Each purchased consumable reserves its maximum prize;
+kept rewards retain their RF backing with no redemption expiry. Label simulated
+results, and claim live transactions only after verified receipts.
 
-## 2. Deploy your game to mainnet
+Record asset sources and any capability gaps. Supply thumbnail/title, developer
+credit, About and Store metadata only when requested by the publishing interface.
+Rare Friends reviews the game and assets against `AGENTS.md` before production
+publication. Automated checks do not deploy or publish games.
 
-```sh
-npm run deploy:contracts
-```
+## Reference docs
 
-Enter your NFT ID, the RF prize stake, and your private key at the prompts. The script checks ownership, the canonical NFT wallet, RF and ETH balances, and the existing mainnet dependencies. Review the displayed terms and gas estimate, then type `DEPLOY` to send the deployment, exact RF approval and stake-funding transactions.
-
-The command builds contracts and SDK bindings first. It defaults to `examples/fishing/game.json`; pass your game's JSON to deploy other immutable terms:
-
-```sh
-npm run deploy:contracts -- games/my-game/game.json
-```
-
-It prints and saves `contracts/deployments/4663-<game-address>.json` after confirmation. The manifest contains addresses, terms and transaction hashes; **no private key**. Set the shell variable below to the actual printed path:
-
-```sh
-FRIENDSDK_DEPLOYMENT='contracts/deployments/4663-0xYOUR_GAME_ADDRESS.json'
-```
-
-Keep that file to resume a partially completed deployment:
-
-```sh
-npm run deploy:contracts -- --resume "$FRIENDSDK_DEPLOYMENT"
-```
-
-If confirmation was interrupted before the game address was known, use the transaction-hash manifest path printed by the script instead. Resume observes recorded transactions before sending anything again.
-
-## 3. Run a real play with your Generations NFT
-
-```sh
-npm run play:contracts -- "$FRIENDSDK_DEPLOYMENT"
-```
-
-The command uses the NFT ID recorded at deployment. To use another hardwired NFT you own, append its token ID:
-
-```sh
-npm run play:contracts -- "$FRIENDSDK_DEPLOYMENT" YOUR_TOKEN_ID
-```
-
-Enter the owner wallet's private key at the hidden prompt. Review the amounts, then type `PLAY`. The command tops up the canonical NFT wallet only if needed, buys one consumable if none is available, consumes it, pays Dice's quoted ETH fee, and waits for settlement. Every transaction uses real mainnet assets. You can then type `REDEEM` to sell the reward for RF paid back into your NFT wallet, or press Enter to keep it.
-
-If Dice is still pending or you interrupted the process after a committed play, use its printed play ID to continue that same result:
-
-```sh
-npm run resolve:contracts -- "$FRIENDSDK_DEPLOYMENT" PLAY_ID
-```
-
-Resolution reuses the existing request; it does not buy another play or reroll. Oracle delivery depends on Dice's provider. Pending plays and kept rewards remain backed while waiting. The supplied game has no refund, replacement request or expiry.
-
-## 4. Run the local browser preview
-
-This optional UI preview uses sample Friends and simulated balances. Your real NFT is used by the mainnet commands above.
-
-```sh
-python3 -m http.server 4178 --directory examples/fishing/dist
-```
-
-Open `http://localhost:4178` (Python 3 is needed only for this command). Read [AGENTS.md](AGENTS.md) and [API.md](API.md), and copy [the fishing example](examples/fishing/README.md) into `games/<name>` to start building.
-
-The deployment creates only `ChanceGame` and its bound `Consumable`. Dice Protocol supplies randomness through its existing mainnet oracle. See [contract setup, resolution, and testing](contracts/README.md) for the complete flow. The browser fishing example stays a local preview; use the SDK host transport with the saved deployment to build a connected game.
-
-## Game boundary
-
-Every game uses the same **960 × 640** container, scaled to the available width. The SDK hosting boundary requires developer code to run in a sandboxed iframe; the standalone preview is a local host fixture. Menus, inventory, sound controls, Friend selection, NFT-wallet balance and action confirmations stay inside the container. Games cannot draw UI outside it.
-
-For a future host, catalog metadata is limited to a thumbnail and title. Detail metadata adds “by dev,” About and linked Store items alongside the game container. Purchasing and redeeming happen inside the game. These are prototype requirements, not existing production pages.
-
-The host owns Friend selection and the wallet connection. Games receive a limited action client for that selection; switching Friend or wallet cancels pending confirmations.
-
-## V1 rules
-
-- Players control a **hardwired Generations NFT**. No activation, tier, or weight requirement.
-- RF only. Consumables, catches, and redemption proceeds belong to the Friend wallet and follow the NFT.
-- One loop: **buy consumable → consume → await result → reveal → keep or redeem**. Game presentation never changes a paid result.
-- **No redemption expiry.** Each kept reward retains its original RF value and full backing until sold.
-- Stake is RF prize capital. The developer funds their own isolated deployment; there is no automated stake recommendation, paid submission, or fixed SDK minimum. Production publication and funding agreements are separate from developer testing.
-- New purchases stop if free stake cannot cover the highest prize. Every purchased consumable reserves its maximum prize, so already purchased plays remain backed and usable.
-- Defer new currencies, launchpads, markets, trading-fee projections, and custom developer contracts.
-
-```text
-free stake = game RF − unused/pending play reserves − kept reward liabilities
-
-buy:      require free stake >= highest prize
-          require free stake + purchase payment >= quantity × highest prize
-          reserve quantity × highest prize atomically
-settle:   replace one maximum reserve with the actual reward value
-redeem:   burn the reward and pay its fixed RF value to the Friend wallet
-withdraw: deploying developer can withdraw only free stake
-```
-
-For fishing, bait costs 1 RF and the highest prize is 10 RF. The first bait therefore needs at least 10 RF of free stake before payment. Its 10 RF reserve follows it through the cast. A kept 0.25 RF fish reserves 0.25 RF indefinitely; the remaining 9.75 RF becomes available again. See [the updated design](FISHING_GAME_DESIGN.md).
-
-## What the SDK contains
-
-| Part | Contents |
+| Guide | Use it for |
 | --- | --- |
-| Interface | Standard game frame, shared Friend picker, NFT-wallet and confirmation menus, HUD, item panels, keyboard/touch controls |
-| World | Existing scene JSON, terrain, props, projection, collision and depth sorting |
-| Movement and loading | Reusable directional/click movement, image/world loading and canonical Friend sprites |
-| Sound and effects | Ten cues, mute, reward reveals, skip and reduced motion |
-| Game rules | Validated outcome definitions, exact RF calculations, local preview and reservation accounting |
-| Host transport | Isolated frame bridge; owner-signed actions through the selected NFT wallet; pinned deployment, exact approval, simulation and receipt checks |
-| Developer kit | Typed package, runnable fishing reference, AI rules, PR template and deterministic build/configuration checks |
+| [AGENTS.md](AGENTS.md) | Instructions for your coding agent |
+| [API.md](API.md) | Exported modules and game actions |
+| [Runtime and capabilities](HOST_INTEGRATION.md) | Runtime integration, sandbox serving and implemented features |
+| [World and character guidance](WORLD_RULES.md) | World design, canonical Friend sprites and optional renderer utilities |
+| [Fishing design](FISHING_GAME_DESIGN.md) | Complete example rules and reward table |
+| [Sound kit](SOUND_KIT.md) and [asset notices](NOTICE.md) | Audio controls and asset provenance |
+| [Contracts](contracts/README.md) | Optional contract deployment and developer tooling |
+| [Oracle operations](docs/oracle/README.md) | RNG delivery, pending plays and proposed recovery work |
 
-The contract implementation is [ChanceGame](contracts/src/ChanceGame.sol): configurable consumable and weighted outcomes, immutable terms, permanent rewards, full backing, and deployer-only surplus withdrawals. Each committed play group gets one Dice request. [Contract notes](contracts/README.md) describe deployment and operation.
-
-## One source of truth
-
-| Repo | Responsibility |
-| --- | --- |
-| `friendsdk/src`, `examples`, `games` | SDK source, examples, game definitions and submission checks |
-| `friendsdk/contracts` | Standalone game Solidity, tests, vendored dependencies and local deployment records |
-| `friendsdk/scripts/contracts` | Interactive deployment and Dice resolution tooling |
-
-Generated modules, local example builds, and contract bindings are outputs. Edit their source. Bindings record the compiler/source hashes and are updated with `npm run sync:contracts` after `npm run build:contracts`. No sibling contract or web repository is required.
-
-## Submit and launch
-
-1. PR includes source/assets, run instructions, SDK version and `game.json` with exact RF cost, outcome probabilities and rewards.
-2. CI builds the SDK/games and validates configuration. The reviewing AI follows `AGENTS.md`; Rare Friends approves. CI is not an automatic AI review or deployment service.
-3. Production publication requires separate Rare Friends review and agreement. A developer's test deployment does not publish a game on the production web app.
-
-Before public paid play: review the external Dice provider and its delivery assumptions, connect the deployed game through the trusted NFT-wallet transport, recover pending plays, and verify deployed terms and funding. The local preview, tests and a successful deployment do not establish unattended operation.
+Trading, creator fees and wearable NFTs are not implemented in v0.1. See the
+[capability list](HOST_INTEGRATION.md#capabilities) for the full supported scope.

@@ -7,10 +7,10 @@ import { FishingGame, fishingGame } from "./index.js";
 
 const SAMPLE_FRIENDS: readonly GameFriend[] = [
   { id: 7730n, label: "Sample Friend A", kind: "sample" },
-  { id: 7731n, label: "Sample Friend B", kind: "sample" },
+  { id: 3412n, label: "Sample Friend B", kind: "sample" },
 ];
 
-/** Standalone local host fixture with simulated wallets and no production integration. */
+/** Internal SDK test fixture. Creator/player prototypes must verify wallet/NFT eligibility in the host. */
 export function FishingPreview() {
   const sessions = useRef(new Map<bigint, PreviewGameClient>());
   const pending = useRef<(() => void) | null>(null);

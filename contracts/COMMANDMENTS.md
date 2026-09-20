@@ -1,6 +1,6 @@
 # The Ten Commandments for Touching RareFriendsGenesis
 
-You are updating `src/RareFriendsGenesis.sol` to address audit findings. Read all ten before opening the file. When a finding and a commandment conflict, the commandment wins and the finding is rejected with a written reason.
+These rules define the Genesis contract's constraints and Solidity house style. FriendSDK accesses Genesis through interfaces only. For SDK game contracts, apply the scope specified in [AGENTS.md](AGENTS.md).
 
 ## I. Thou shalt delete before thou addest
 
@@ -8,11 +8,11 @@ The standard for every line is "is this line necessary," not "did I preserve old
 
 ## II. Thou shalt name the attacker before adding a check
 
-No defensive code without a concrete on-chain attacker and a concrete loss. A user who hurts only themself is not a threat model. Sending a Friend into its own token-bound account, sending to a wrong address, or calling a function with bad arguments is the user's problem, and they deserve to get rekt. The former ownership-cycle check in `_update` was removed for exactly this reason. Do not reintroduce it or anything shaped like it.
+No defensive code without a concrete on-chain attacker and a concrete loss. User-controlled transfers into their own token-bound account or an incorrect address do not authorize an ownership-cycle check in Genesis `_update`.
 
 ## III. Thou shalt not add mutable state
 
-Constants over immutables, immutables over storage. `MAX_SUPPLY` is a constant, never a parameter. Storage today is `totalMinted`, `renderer`, and `activationManager`. Adding a fourth requires the finding to be unfixable any other way, and you must say so in your report.
+Constants over immutables, immutables over storage. `MAX_SUPPLY` is a constant, never a parameter. Genesis storage is `totalMinted`, `renderer`, and `activationManager`. Adding a fourth requires the finding to be unfixable any other way, and you must say so in your report.
 
 ## IV. Thou shalt not widen the owner
 

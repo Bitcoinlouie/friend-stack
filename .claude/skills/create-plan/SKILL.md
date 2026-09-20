@@ -9,6 +9,9 @@ disable-model-invocation: true
 Turn an agreed intent into an implementation-ready plan grounded in the
 repository's current code, conventions, checks and tests.
 
+Keep oracle-management plans under `docs/oracle/plan-<slug>.md`; other plans use
+`docs/plan-<slug>.md`. Read related documents in the same topic folder.
+
 ## Repository context
 
 FriendSDK is an isolated prototype kit for small RF chance games. The plan must
@@ -93,13 +96,13 @@ The second answer must be enforced in code the plan names — not merely intende
      ask the user to confirm none is missing.
    - Propose codebase-supported choices when useful, but ask the user to
      decide; never silently choose.
-   - Confirm the `docs/plan-<slug>.md` path and whether an existing file may
+   - Confirm the topic-appropriate plan path and whether an existing file may
      be replaced.
    - If everything appears settled, summarize the proposed implementation
      direction and ask the user to confirm it.
 5. Wait for the answers. Do not write the plan in the same turn as the
    questions.
-6. Create or revise the confirmed `docs/plan-<slug>.md`.
+6. Create or revise the confirmed plan file.
 7. Audit the finished plan against the intent and repository. Remove guesses,
    stale references, vague tasks, and untestable completion claims.
 
