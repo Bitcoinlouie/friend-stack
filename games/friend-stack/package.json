@@ -1,0 +1,10 @@
+{
+  "name": "friend-stack",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Friend Stack: a physics tower stacker for Rare Friends built on FriendSDK v0.1.2.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "planck": "1.5.0"
+  }
+}

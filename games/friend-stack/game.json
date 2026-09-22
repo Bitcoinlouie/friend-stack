@@ -1,0 +1,11 @@
+{
+  "name": "Friend Stack",
+  "consumable": "Summit Crate",
+  "price": "1000000000000000000",
+  "outcomes": [
+    { "name": "Chalk Coat", "chanceBps": 6000, "reward": "250000000000000000" },
+    { "name": "Brick Coat", "chanceBps": 2500, "reward": "1000000000000000000" },
+    { "name": "Neon Coat", "chanceBps": 1200, "reward": "2000000000000000000" },
+    { "name": "Summit Crown", "chanceBps": 300, "reward": "8000000000000000000" }
+  ]
+}

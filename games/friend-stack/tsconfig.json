@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@rarefriends/friendsdk/runtime": ["../../dist/runtime.d.ts"],
+      "@rarefriends/friendsdk/frame": ["../../dist/game-frame.d.ts"],
+      "@rarefriends/friendsdk/ui": ["../../dist/experience-ui.d.ts"],
+      "@rarefriends/friendsdk/reveal": ["../../dist/reward-reveal.d.ts"],
+      "@rarefriends/friendsdk/game": ["../../dist/game.d.ts"],
+      "@rarefriends/friendsdk/sprites": ["../../dist/friend-sprites.d.ts"],
+      "@rarefriends/friendsdk/sounds": ["../../dist/friend-sounds.d.ts"]
+    }
+  },
+  "include": ["*.ts", "*.tsx", "*.json", "../../examples/styles.d.ts"],
+  "exclude": ["node_modules", ".friendsdk"]
+}
