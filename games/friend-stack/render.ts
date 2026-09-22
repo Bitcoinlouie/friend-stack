@@ -26,6 +26,8 @@ export class StackRenderer {
   camBottom = -3;
   /** Logical y of the NEXT preview, kept below the DOM HUD at every frame size. */
   nextTop = 74;
+  /** Logical left/top of the on-screen Rotate/Drop controls, measured from the DOM on resize. */
+  controls: Readonly<{ left: number; top: number }> | null = null;
   private scale = SCALE;
   private dpr = 1;
   private shake = 0;
@@ -65,7 +67,7 @@ export class StackRenderer {
 
   draw(engine: StackEngine, look: Look, seconds: number, now: number) {
     const { ctx } = this;
-    const target = Math.max(-3, engine.height - 9.5, (engine.hover?.y ?? 0) - 13.5);
+    const target = Math.max(this.cameraFloor(engine), engine.height - 9.5, (engine.hover?.y ?? 0) - 13.5);
     this.camBottom = look.reducedMotion ? target : this.camBottom + (target - this.camBottom) * Math.min(1, seconds * 2.5);
     this.shake = Math.max(0, this.shake - seconds);
     const jitter = look.reducedMotion || !this.shake ? 0 : this.shake * 14;
@@ -107,6 +109,13 @@ export class StackRenderer {
       return card.toDataURL("image/png");
     } catch { return null; }
     finally { Object.assign(this, saved); }
+  }
+
+  /** On narrow frames the controls reach over the platform, so the camera starts lower to keep it clear of them. */
+  private cameraFloor(engine: StackEngine) {
+    const controls = this.controls;
+    if (!controls || controls.left > this.width / 2 + engine.rules.platformHalfWidth * SCALE + 8) return -3;
+    return Math.min(-3, (controls.top - 10 - this.height) / SCALE - PLATFORM_DEPTH);
   }
 
   private sx(x: number) { return this.width / 2 + x * this.scale; }

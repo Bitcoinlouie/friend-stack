@@ -131,18 +131,29 @@ async function desktop(context) {
 }
 
 async function phone(context) {
-  const { game } = context, { read, button, ready } = helpers(context);
+  const { game } = context, { canvas, read, button, ready } = helpers(context);
   await game.getByRole("button", { name: /^Daily Tower · / }).click();
   await game.locator('canvas[data-mode="daily"]').waitFor();
+  await ready();
+  // The platform (1.2 m deep, top at y = 0) must sit fully above the Rotate/Drop controls at the start of a run.
+  const box = await canvas.boundingBox(), controls = await game.locator(".stack-controls").boundingBox();
+  const scale = box.height / 640, logicalWidth = box.width / scale;
+  const platformBottom = box.y + (640 + (1.2 + Number(await read("cam-bottom"))) * 40) * scale;
+  const platformRight = box.x + (logicalWidth / 2 + Number(await read("land")) * 40) * scale;
+  const beside = controls.x >= platformRight;
+  const clearance = Math.round(beside ? controls.x - platformRight : controls.y - platformBottom);
+  assert(clearance >= 4, `Controls overlap the platform by ${-clearance}px`);
   for (let index = 0; index < 3; index++) { await ready(); await button("Drop").click(); }
   await ready();
-  return { dropped: 3, pieces: Number(await read("pieces")) };
+  return { dropped: 3, pieces: Number(await read("pieces")), clearance: `controls ${clearance}px ${beside ? "right of" : "below"} the platform` };
 }
 
 const results = [];
 for (const options of [
   { width: 960, height: 800, screenshot: "artifacts/friend-stack-desktop.png", run: desktop },
   { width: 390, height: 780, screenshot: "artifacts/friend-stack-phone.png", run: phone },
+  { width: 393, height: 852, screenshot: "artifacts/friend-stack-iphone-15-pro.png", run: phone },
+  { width: 852, height: 393, screenshot: "artifacts/friend-stack-phone-landscape.png", run: phone },
 ]) {
   let summary;
   const run = await testGame(directory, { width: options.width, height: options.height, screenshot: options.screenshot, timeout: 20_000,

@@ -252,8 +252,11 @@ export default function FriendStack({ friendId, client, paused }: GameComponentP
     renderer.current = draw;
     const fit = () => {
       const box = frame.getBoundingClientRect(), actions = frame.querySelector(".stack-actions")?.getBoundingClientRect();
+      const controls = frame.querySelector(".stack-controls")?.getBoundingClientRect();
       game.setViewHalfWidth(draw.resize(box.width, box.height));
       if (actions && box.height) draw.nextTop = Math.max(60, (actions.bottom - box.top + 10) * draw.height / box.height);
+      draw.controls = controls && box.width && box.height
+        ? { left: (controls.left - box.left) * draw.width / box.width, top: (controls.top - box.top) * draw.height / box.height } : null;
     };
     fit();
     const observer = new ResizeObserver(fit); observer.observe(frame);
@@ -301,6 +304,7 @@ export default function FriendStack({ friendId, client, paused }: GameComponentP
       node.dataset.wind = game.wind.phase; node.dataset.mode = game.rules.mode;
       node.dataset.crate = game.crate ? "placed" : game.hover?.kind === "crate" ? "hover" : "none";
       node.dataset.land = String(game.rules.platformHalfWidth);
+      node.dataset.camBottom = draw.camBottom.toFixed(2);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

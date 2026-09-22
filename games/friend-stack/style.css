@@ -83,7 +83,7 @@
   .stack-hud{inset:6px 6px auto;gap:5px}
   .stack-score{padding:3px 6px}
   .stack-score strong{font-size:15px}
-  .stack-score small{font-size:9px;max-width:130px}
+  .stack-score small{font-size:9px;max-width:150px;white-space:normal}
   .stack-lives{margin-top:4px;padding:3px 4px;gap:3px}
   .stack-lives i{width:9px;height:9px}
   .stack-actions{gap:3px;max-width:48%}

@@ -236,7 +236,8 @@ node games/friend-stack/test.mjs            # add FRIEND_STACK_CHROME=chrome to 
 ```
 
 `test.mjs` runs the real runtime and sandbox with the SDK's mock wallet and
-sample Friend #7730, at 960 px and at 390 px (portrait). On desktop it:
+sample Friend #7730, at 960 px desktop and at three phone sizes: 390 × 780 and
+393 × 852 portrait, and 852 × 393 landscape. On desktop it:
 
 - chooses Free Stack from the start card and checks the Gen 1 fixture Friend
   gets the 10.4 m Gold land, then drops pieces;
@@ -249,8 +250,15 @@ sample Friend #7730, at 960 px and at 390 px (portrait). On desktop it:
 - checks the Session spend panel;
 - switches to the Daily Tower and checks it uses the standard platform.
 
-On the phone it starts the Daily Tower and drops pieces. Mock tests do not
-replace a real-wallet playtest.
+On each phone size it starts the Daily Tower, measures that the Rotate and Drop
+buttons sit clear of the platform (below it on portrait phones, where the
+camera starts lower to make room, and beside it in landscape), then drops
+pieces.
+
+Mock tests do not replace a real-wallet playtest. The game has also been played
+with a real wallet and owned Friends on the public preview: in a desktop
+browser, and on an iPhone 15 Pro in a wallet app's browser with a Gen 4 Friend,
+which confirmed the generation read and Bronze land on a real device.
 
 ## Credits
 
